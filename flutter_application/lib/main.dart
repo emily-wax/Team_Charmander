@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+
+import 'api/firebase_api.dart';
+
 import 'second_page.dart';
 import 'third_page.dart';
 import 'fourth_page.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
+  await Firebase.initializeApp(
+    // options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // await FirebaseApi().initNotifications();
   runApp(MyApp());
 }
 

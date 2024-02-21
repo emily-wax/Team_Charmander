@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1026902486548",
+    "project_id": "team-charmander-482",
+    "storage_bucket": "team-charmander-482.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1026902486548:android:7f9994fa30fe0655e60101",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDU0_Gq9LR16XAAgV0K3tsi4FEqc8fQQgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

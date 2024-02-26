@@ -11,10 +11,6 @@ Future main() async {
   runApp(MyApp());
 }
 
-// void main() {
-//   runApp(MyApp());
-// }
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -52,7 +48,7 @@ class HomePage extends StatelessWidget {
               Icon(
                 Icons.house,
                 size: 100,
-                color:Colors.green
+                color: Colors.green,
               ),
               SizedBox(height: 20),
               Text(
@@ -70,7 +66,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => SecondPage()),
                   );
                 },
-                child: Text('Chores'),
+                child: Text(
+                  'Chores',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
               SizedBox(height: 20),
               ElevatedButton(
@@ -80,7 +79,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => ThirdPage()),
                   );
                 },
-                child: Text('Schedules'),
+                child: Text(
+                  'Appliances',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
               SizedBox(height: 20),
               ElevatedButton(
@@ -90,7 +92,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => FourthPage()),
                   );
                 },
-                child: Text('Account'),
+                child: Text(
+                  'Account',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
             ],
           ),

@@ -59,6 +59,11 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Icon(Icons.house, size: 100, color: Colors.green),
+              Icon(
+                Icons.house,
+                size: 100,
+                color: Colors.green,
+              ),
               SizedBox(height: 20),
               Text(
                 'Welcome to Your House!',
@@ -75,7 +80,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => SecondPage()),
                   );
                 },
-                child: Text('Chores'),
+                child: Text(
+                  'Chores',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
               SizedBox(height: 20),
               ElevatedButton(
@@ -85,7 +93,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => ThirdPage()),
                   );
                 },
-                child: Text('Schedules'),
+                child: Text(
+                  'Appliances',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
               SizedBox(height: 20),
               ElevatedButton(
@@ -95,7 +106,10 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => FourthPage()),
                   );
                 },
-                child: Text('Account'),
+                child: Text(
+                  'Account',
+                  style: TextStyle(fontSize: 20), // Adjust the font size here
+                ),
               ),
             ],
           ),

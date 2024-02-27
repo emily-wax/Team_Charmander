@@ -17,6 +17,17 @@
     <script defer src="/__/firebase/10.8.0/firebase-analytics-compat.js"></script>
     <script defer src="/__/firebase/10.8.0/firebase-remote-config-compat.js"></script>
     <script defer src="/__/firebase/10.8.0/firebase-performance-compat.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("firebase-messaging-sw.js");
+        });
+
+        window.addEventListener('flutter-first-frame', function () {
+          navigator.serviceWorker.register('flutter_service_worker.js');
+        });
+    }
+
     <!-- 
       initialize the SDK after all desired features are loaded, set useEmulator to false
       to avoid connecting the SDK to running emulators.

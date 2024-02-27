@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart'; // for debugPrint()
+
 import 'second_page.dart';
 import 'third_page.dart';
 import 'fourth_page.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  //// Campaign Notifications - delete NONE of the following lines, even if they are commented out
+  await FirebaseMessaging.instance.setAutoInitEnabled(true);
+  // final fcmToken = await FirebaseMessaging.instance.getToken();
+  // print("FCMToken $fcmToken");
+  ////
 
   runApp(MyApp());
 }
@@ -45,6 +58,7 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              Icon(Icons.house, size: 100, color: Colors.green),
               Icon(
                 Icons.house,
                 size: 100,

@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'second_page.dart';
-import 'third_page.dart';
-import 'fourth_page.dart';
+import 'auth_service.dart'; // Import the AuthService
+import 'HomePage.dart'; // Import the HomePage
+import 'SignInPage.dart'; // Import the SignInPage
 
+final FirebaseOptions firebaseOptions = FirebaseOptions(
+  apiKey: "AIzaSyC_5CMA0uX6Dw8PLvlJs4Y8hzFU1bayZtg",
+  authDomain: "team-charmander-482.firebaseapp.com",
+  databaseURL: "https://team-charmander-482-default-rtdb.firebaseio.com",
+  projectId: "team-charmander-482",
+  storageBucket: "team-charmander-482.appspot.com",
+  messagingSenderId: "1026902486548",
+  appId: "1:1026902486548:web:9a624b1af755490ce60101",
+  measurementId: "G-HE791BZ4WF"
+);
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
+  await Firebase.initializeApp(options: firebaseOptions);
 
-  runApp(MyApp());
+
+  // Create an instance of AuthService to check if the user is signed in
+  AuthService authService = AuthService();
+  bool isUserSignedIn = await authService.isUserSignedIn();
+
+  runApp(MyApp(isUserSignedIn: isUserSignedIn));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isUserSignedIn;
+
+  MyApp({required this.isUserSignedIn});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -19,88 +38,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.brown,
       ),
-      home: HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Welcome Home'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.home),
-            onPressed: () {
-              print('Home icon pressed!');
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        color: Colors.yellow[200], // Set the background color to light yellow
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                Icons.house,
-                size: 100,
-                color: Colors.green,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Welcome to Your House!',
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SecondPage()),
-                  );
-                },
-                child: Text(
-                  'Chores',
-                  style: TextStyle(fontSize: 20), // Adjust the font size here
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ThirdPage()),
-                  );
-                },
-                child: Text(
-                  'Appliances',
-                  style: TextStyle(fontSize: 20), // Adjust the font size here
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => FourthPage()),
-                  );
-                },
-                child: Text(
-                  'Account',
-                  style: TextStyle(fontSize: 20), // Adjust the font size here
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      // Use the HomePage or SignInPage based on the user's sign-in status
+      home: isUserSignedIn ? HomePage() : SignInPage(),
     );
   }
 }

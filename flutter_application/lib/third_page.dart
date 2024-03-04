@@ -15,7 +15,7 @@ class ThirdPage extends StatelessWidget {
             SizedBox(height: 20),
             ApplianceButton(applianceName: 'Dryer'),
             SizedBox(height: 20),
-            ApplianceButton(applianceName: 'Microwave'),
+            ApplianceButton(applianceName: 'Oven'),
             SizedBox(height: 20),
             ApplianceButton(applianceName: 'Dishwasher'),
           ],

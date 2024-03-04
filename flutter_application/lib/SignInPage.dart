@@ -73,7 +73,7 @@ class _SignInPageState extends State<SignInPage> {
               ElevatedButton(
                 onPressed: isLoading ? null : () => _authenticate(),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.white, // White button
+                  // primary: Colors.white, // White button
                 ),
                 child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
               ),
@@ -85,7 +85,7 @@ class _SignInPageState extends State<SignInPage> {
                   });
                 },
                 style: TextButton.styleFrom(
-                  primary: Colors.blue, // Blue color for "already have an account?"
+                  // primary: Colors.blue, // Blue color for "already have an account?"
                 ),
                 child: Text(
                   isSignUp

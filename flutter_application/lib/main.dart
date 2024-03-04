@@ -18,7 +18,6 @@ Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: firebaseOptions);
 
-
   // Create an instance of AuthService to check if the user is signed in
   AuthService authService = AuthService();
   bool isUserSignedIn = await authService.isUserSignedIn();

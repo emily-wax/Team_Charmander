@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'second_page.dart';
 import 'third_page.dart';
 import 'fourth_page.dart';
+import 'chores_page.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -42,7 +42,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => SecondPage()),
+                    MaterialPageRoute(builder: (context) => Chores()),
                   );
                 },
                 child: Text(

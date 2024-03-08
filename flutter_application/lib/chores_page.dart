@@ -26,28 +26,95 @@ class _ToDoListState extends State<ToDoList> {
   TextEditingController taskController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
+  CollectionReference choresCollection = FirebaseFirestore.instance.collection('tasks-temp');
 
    void _addChoreToFirestore(String choreName, String assignee) {
-    FirebaseFirestore.instance.collection('tasks-temp').add({
-      'taskName': choreName,
+    choresCollection.add({
+      'choreName': choreName,
       'assignee': assignee,
+      'isCompleted': false,
     });
+  }
+
+  void _updateTaskCompletion(String taskId, bool? isCompleted) {
+    choresCollection.doc(taskId).update({'isCompleted': isCompleted ?? false});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('To-Do List'),
+        title: const Text('To-Do List'),
       ),
       body: Column(
         children: [
+          // Expanded(
+          //   child: ListView.builder(
+          //     itemCount: chores.length,
+          //     itemBuilder: (context, index) {
+          //       return ListTile(
+          //         title: Text(chores[index]),
+          //       );
+          //     },
+          //   ),
+          // ),
           Expanded(
-            child: ListView.builder(
-              itemCount: chores.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(chores[index]),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: choresCollection.snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                var chores = snapshot.data!.docs;
+                List<Widget> choreWidgets = [];
+
+                for (var c in chores) {
+                  var choreData = c.data() as Map<String, dynamic>;
+                  var choreId = c.id;
+                  var choreName = choreData['choreName'];
+                  var assignee = choreData['assignee'];
+                  var isCompleted = choreData['isCompleted'];
+
+                  var choreWidget = ListTile(
+                      leading: Checkbox(
+                      value: isCompleted,
+                      onChanged: (value) {
+                        // Update the task's isCompleted status in the Firestore database
+                        choresCollection.doc(choreId).update({'isCompleted': value});
+                      },
+                    ),
+                    title: Text('Task: $choreName',
+                      style: TextStyle(
+                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                      ),
+                      ), //, style: TextStyle(decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none)),
+                    subtitle: Text('Assignee: $assignee',
+                      style: TextStyle(
+                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                      ),
+                    ),
+                  
+                    
+                    // trailing: Checkbox(
+                    //   value: isCompleted,
+                    //   onChanged: (value) {
+                    //     setState(() {
+                    //       // if (isCompleted == false)
+                    //         _updateTaskCompletion(choreId, value);
+
+                    //     });
+                    //   },
+                    // ),
+                  );
+
+                  choreWidgets.add(choreWidget);
+                }
+
+                return ListView(
+                  children: choreWidgets,
                 );
               },
             ),
@@ -58,7 +125,7 @@ class _ToDoListState extends State<ToDoList> {
               onPressed: () {
                 _showAddTaskDialog(context);
               },
-              child: Text('Add Task'),
+              child: const Text('Add Task'),
             ),
           ),
         ],
@@ -71,19 +138,19 @@ class _ToDoListState extends State<ToDoList> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Add Task'),
+          title: const Text('Add Task'),
           content: Column(
             children: [
               TextField(
                 controller: titleController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter task title',
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextField(
                 controller: assigneeController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter assignee name',
                 ),
               ),
@@ -94,7 +161,7 @@ class _ToDoListState extends State<ToDoList> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
@@ -112,7 +179,7 @@ class _ToDoListState extends State<ToDoList> {
 
                 Navigator.of(context).pop();
               },
-              child: Text('Add'),
+              child: const Text('Add'),
             ),
           ],
         );

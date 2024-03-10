@@ -37,8 +37,12 @@ class _ToDoListState extends State<ToDoList> {
     });
   }
 
-  void _updateTaskCompletion(String taskId, bool? isCompleted) {
-    choresCollection.doc(taskId).update({'isCompleted': isCompleted ?? false});
+  void _updateTaskCompletion(String choreId, bool? isCompleted) {
+    choresCollection.doc(choreId).update({'isCompleted': isCompleted ?? false});
+  }
+
+  void _delete_chore(String choreId) {
+    choresCollection.doc(choreId).delete();
   }
 
   bool autoAssignChecked = false;
@@ -93,6 +97,12 @@ class _ToDoListState extends State<ToDoList> {
                         Text('Assignee: $assignee'),
                         if (deadline != null)
                           Text('Deadline: $deadline'),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            _delete_chore(choreId);
+                          },
+                        )
                       ],
                     ),
                   );

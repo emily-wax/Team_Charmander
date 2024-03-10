@@ -28,17 +28,21 @@ class _ToDoListState extends State<ToDoList> {
   TextEditingController assigneeController = TextEditingController();
   CollectionReference choresCollection = FirebaseFirestore.instance.collection('tasks-temp');
 
-   void _addChoreToFirestore(String choreName, String assignee) {
+   void _addChoreToFirestore(String choreName, String assignee, Timestamp? deadline) {
     choresCollection.add({
       'choreName': choreName,
       'assignee': assignee,
       'isCompleted': false,
+      'deadline': deadline,
     });
   }
 
   void _updateTaskCompletion(String taskId, bool? isCompleted) {
     choresCollection.doc(taskId).update({'isCompleted': isCompleted ?? false});
   }
+
+  bool autoAssignChecked = false;
+  DateTime? selectedDate;
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +52,6 @@ class _ToDoListState extends State<ToDoList> {
       ),
       body: Column(
         children: [
-          // Expanded(
-          //   child: ListView.builder(
-          //     itemCount: chores.length,
-          //     itemBuilder: (context, index) {
-          //       return ListTile(
-          //         title: Text(chores[index]),
-          //       );
-          //     },
-          //   ),
-          // ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: choresCollection.snapshots(),
@@ -77,6 +71,8 @@ class _ToDoListState extends State<ToDoList> {
                   var choreName = choreData['choreName'];
                   var assignee = choreData['assignee'];
                   var isCompleted = choreData['isCompleted'];
+                  // var deadline = choreData['deadline'];
+                  var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
 
                   var choreWidget = ListTile(
                       leading: Checkbox(
@@ -91,23 +87,14 @@ class _ToDoListState extends State<ToDoList> {
                         decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
                       ), //, style: TextStyle(decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none)),
-                    subtitle: Text('Assignee: $assignee',
-                      style: TextStyle(
-                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                      ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Assignee: $assignee'),
+                        if (deadline != null)
+                          Text('Deadline: $deadline'),
+                      ],
                     ),
-                  
-                    
-                    // trailing: Checkbox(
-                    //   value: isCompleted,
-                    //   onChanged: (value) {
-                    //     setState(() {
-                    //       // if (isCompleted == false)
-                    //         _updateTaskCompletion(choreId, value);
-
-                    //     });
-                    //   },
-                    // ),
                   );
 
                   choreWidgets.add(choreWidget);
@@ -134,12 +121,15 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _showAddTaskDialog(BuildContext context) {
+    // bool autoAssignChecked = false;
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add Task'),
-          content: Column(
+          content: StatefulBuilder(
+            builder: (context, setState) {
+          return Column(
             children: [
               TextField(
                 controller: titleController,
@@ -154,8 +144,52 @@ class _ToDoListState extends State<ToDoList> {
                   hintText: 'Enter assignee name',
                 ),
               ),
+             const SizedBox(height: 10),
+             Row(
+              children: [
+                Checkbox(
+                  value: autoAssignChecked,
+                  onChanged: (bool? value) {
+                    setState(() =>
+                      autoAssignChecked = value!);
+                    
+                  },
+                ),
+                const Text('Auto-assign this task'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Text('Select Deadline: '),
+                ElevatedButton(
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2101),
+                    );
+
+                    if (pickedDate != null &&
+                        pickedDate != selectedDate) {
+                      setState(() {
+                        selectedDate = pickedDate;
+                      });
+                    }
+                  },
+                  child: Text(selectedDate != null
+                      ? 'Change Deadline'
+                      : 'Set Deadline...'),
+                ),
+                if (selectedDate != null) Text('Deadline: $selectedDate'),
+              ],
+            ),
             ],
+          );
+            },
           ),
+           
           actions: [
             TextButton(
               onPressed: () {
@@ -167,9 +201,10 @@ class _ToDoListState extends State<ToDoList> {
               onPressed: () {
                 String choreName = titleController.text.trim();
                 String assignee = assigneeController.text.trim();
+                Timestamp? format = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
                 if (choreName.isNotEmpty && assignee.isNotEmpty) {
-                  _addChoreToFirestore(choreName, assignee);
+                  _addChoreToFirestore(choreName, assignee, format);
                   setState(() {
                     String choreString = choreName + assignee;
                     chores.add(choreString);
@@ -187,87 +222,3 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 }
-
-//   void _showAddTaskDialog(BuildContext context) {
-
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('Add Task'),
-//           content: TextField(
-//             controller: titleController,
-//             decoration: InputDecoration(
-//               hintText: 'Enter task title',
-//             ),
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//               },
-//               child: Text('Cancel'),
-//             ),
-//             TextButton(
-//               onPressed: () {
-//                 String task = taskController.text.trim();
-//                 if (task.isNotEmpty) {
-//                   setState(() {
-//                     tasks.add(task);
-//                   });
-//                 }
-//                 Navigator.of(context).pop();
-//                 // adds user to database when signing up
-//                 String title = titleController.text.trim();
-//                 String assignee = assigneeController.text.trim();
-
-//                 _createData(ChoreModel('0', title, assignee));
-//               },
-//               child: Text('Add'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-// }
-
-//  void _createData(ChoreModel choreModel) {
-//     final choreCollection = FirebaseFirestore.instance.collection("tasks-temp");
-
-//     String id = choreCollection.doc().id;
-
-//     final newChore = ChoreModel(
-//       choreModel.id,
-//       choreModel.title,
-//       choreModel.assignee,
-//     ).toJson();
-
-//     choreCollection.doc(id).set(newChore);
-
-//   }
-
-// // User Model: should be edited as we add more users
-// class ChoreModel{
-//   final String? id;
-//   final String? title;
-//   final String? assignee;
-
-//   ChoreModel(this.id, this.title, this.assignee);
-
-//   static ChoreModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
-//     return ChoreModel(
-//       snapshot['id'],
-//       snapshot['title'],
-//       snapshot['assignee'],
-//     );
-//   }
-
-//   Map<String, dynamic> toJson(){
-//     return{
-//       "id": id,
-//       "title": title,
-//       "assignee": assignee,
-//     };
-//   }
-// }

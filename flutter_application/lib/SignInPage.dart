@@ -161,7 +161,6 @@ class _SignInPageState extends State<SignInPage> {
 
       userCollection.doc(id).set(newUser);
   }
-
 }
 
 // User model: could be put in a different file in the future but for now is here

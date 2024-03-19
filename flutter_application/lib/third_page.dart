@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'appliance_details_page.dart'; // Import the new ApplianceDetailsPage
 
 class ThirdPage extends StatelessWidget {
+  const ThirdPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Appliances Page'),
+        title: const Text('Appliances Page'),
       ),
-      body: Center(
+      body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -28,14 +31,19 @@ class ThirdPage extends StatelessWidget {
 class ApplianceButton extends StatelessWidget {
   final String applianceName;
 
-  ApplianceButton({required this.applianceName});
+  const ApplianceButton({super.key, required this.applianceName});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
-        // Add any action related to the specific appliance
-        print('Button pressed for $applianceName');
+        // Navigate to ApplianceDetailsPage when the button is pressed
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ApplianceDetailsPage(applianceName: applianceName),
+          ),
+        );
       },
       child: Text(applianceName),
     );

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
@@ -114,6 +115,10 @@ class _SignInPageState extends State<SignInPage> {
         if (isSignUp) {
           // Sign Up
           await authService.signUpWithEmailAndPassword(email, password);
+          
+          // adds user to database when signing up
+          _createData(UserModel('0', email, password));
+
         } else {
           // Sign In
           await authService.signInWithEmailAndPassword(email, password);
@@ -140,5 +145,47 @@ class _SignInPageState extends State<SignInPage> {
         });
       }
     }
+  }
+
+  // Creates user data
+  void _createData(UserModel userModel) {
+      final userCollection = FirebaseFirestore.instance.collection("users");
+
+      String id = userCollection.doc().id;
+
+      final newUser = UserModel(
+        id,
+        userModel.email, 
+        userModel.password,
+      ).toJson();
+
+      userCollection.doc(id).set(newUser);
+  }
+
+}
+
+// User model: could be put in a different file in the future but for now is here
+
+class UserModel{
+  final String? email;
+  final String? password;
+  final String? id;
+
+  UserModel( this.id, this.email, this.password);
+
+  static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
+    return UserModel(
+      snapshot['id'], 
+      snapshot['email'], 
+      snapshot['password']
+    );
+  }
+
+  Map<String, dynamic> toJson(){
+    return{
+      "id": id,
+      "email": email,
+      "password": password,
+    };
   }
 }

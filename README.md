@@ -8,3 +8,7 @@ Then it should pull up.
 # Installing Flutter
 Download the Flutter extension in VsCode  
 Then follow these instructions for installing from VsCode: https://docs.flutter.dev/get-started/install/windows/mobile?tab=vscode
+
+# JSOobject not usable as supertype
+Run: flutter pub get
+Then run: flutter pub upgrade

@@ -8,7 +8,7 @@ import 'SignInPage.dart'; // Import the SignInPage
 final FirebaseOptions firebaseOptions = FirebaseOptions(
   apiKey: "AIzaSyC_5CMA0uX6Dw8PLvlJs4Y8hzFU1bayZtg",
   authDomain: "team-charmander-482.firebaseapp.com",
-  databaseURL: "https://team-charmander-482-default-rtdb.firebaseio.com",
+  // databaseURL: "https://console.firebase.google.com/u/1/project/team-charmander-482/firestore/data/~2F",
   projectId: "team-charmander-482",
   storageBucket: "team-charmander-482.appspot.com",
   messagingSenderId: "1026902486548",

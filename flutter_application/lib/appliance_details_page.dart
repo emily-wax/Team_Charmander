@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart'; // Import Firebase Functions
-import 'package:http/http.dart' as http;
 
 class ApplianceDetailsPage extends StatelessWidget {
   final String applianceName;
@@ -39,7 +38,7 @@ class ApplianceDetailsPage extends StatelessWidget {
   }
 
   void _claimAppliance(String applianceName) async {
-  try {
+    try {
       // Create a Cloud Functions instance
       FirebaseFunctions functions = FirebaseFunctions.instance;
 

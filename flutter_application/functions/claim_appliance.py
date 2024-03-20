@@ -1,10 +1,15 @@
 from firebase_admin import db
 from firebase_admin import initialize_app, credentials
 from flask import Flask, request, jsonify
+# Dependencies for callable functions.
+from firebase_functions import https_fn, options
+
+# Dependencies for writing to Realtime Database.
+# from firebase_admin import db, initialize_app
 
 # Initialize Firebase app
-cred = credentials.Certificate('team-charmander-482-firebase-adminsdk-5qjla-edd1eb5f4a.json.json')
-initialize_app(cred, {'databaseURL': 'https://team-charmander-482-default-rtdb.firebaseio.com'})
+# cred = credentials.Certificate('team-charmander-482-firebase-adminsdk-5qjla-edd1eb5f4a.json')
+
 
 app = Flask(__name__)
 
@@ -13,8 +18,9 @@ def claim_appliance():
     try:
         # Extract data from the request (e.g., user ID, appliance ID)
         request_data = request.json
-        user_id = request_data.get('userId')
-        appliance_id = request_data.get('applianceId')
+        # user_id = request_data.get('userId')
+        user_id = 'tommy'
+        appliance_id = request_data.get('applianceName')
 
         # Check if the appliance is already claimed
         snapshot = db.reference('/appliances/' + appliance_id).get()

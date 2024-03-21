@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'second_page.dart';
 import 'third_page.dart';
 import 'fourth_page.dart';
+import 'appliances_page.dart'; // Import the appliances page
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  const HomePage({Key? key});
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +76,19 @@ class HomePage extends StatelessWidget {
                 },
                 child: const Text(
                   'Account',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton( // New button added for navigating to AppliancesPage
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AppliancesPage()),
+                  );
+                },
+                child: Text(
+                  'Appliances Test',
                   style: TextStyle(fontSize: 20),
                 ),
               ),

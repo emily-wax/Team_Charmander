@@ -16,10 +16,11 @@ class ApplianceDetailsPage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () {
             // Call the Cloud Function to claim the appliance
+            print("hey");
             _claimAppliance(applianceName);
           },
           style: ElevatedButton.styleFrom(
-            primary: Colors.green,
+            //primary: Colors.green,
             padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),

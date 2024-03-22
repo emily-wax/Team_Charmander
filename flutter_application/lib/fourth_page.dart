@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FourthPage extends StatelessWidget {
   @override
@@ -12,37 +13,19 @@ class FourthPage extends StatelessWidget {
       body: Container(
         color: Colors.orange, // Set the background color to orange
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              SizedBox(height: 10,),
-              StreamBuilder<List<UserModel>>(
-                stream: _readData(), 
-                builder: (context, snapshot){
-                  if(snapshot.connectionState == ConnectionState.waiting){
-                    return Center(child: CircularProgressIndicator(),);
-                  } if(snapshot.data!.isEmpty){
-                    return Center(child:Text("No Data Yet"));
-                  }
-                  final users = snapshot.data;
-                  return Padding(padding: EdgeInsets.all(8),
-                  child: Column(
-                    children: users!.map((user) {
-                      return ListTile(
-                        leading: GestureDetector(
-                          child: Icon(Icons.delete),
-                        ),
-                        trailing: GestureDetector(
-                          child: Icon(Icons.update)
-                        ),
-                        title: Text(user.email!),
-                      );
-                    }).toList()
-                  ),
-                  );
-                })
+          child: FutureBuilder(
+            future: _readData(),
+            builder:( (context, snapshot) {
+              if( snapshot.connectionState == ConnectionState.done){
+                if(snapshot.hasData){
+                  UserModel? user = snapshot.data as UserModel;
+                  return Center(child: Text( user.email! ) );
+                }
+              } 
+                
+              return Center(child: CircularProgressIndicator());
 
-            ],
+            }),
           )
         ),
       ),
@@ -50,12 +33,24 @@ class FourthPage extends StatelessWidget {
   }
 }
 
-Stream<List<UserModel>> _readData(){
-  final userCollection = FirebaseFirestore.instance.collection("users");
+// displays current user data
+Future<UserModel> _readData() async {
+  final db = FirebaseFirestore.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final User? user = auth.currentUser;
 
-  return userCollection.snapshots().map((QuerySnapshot)
-  => QuerySnapshot.docs.map((e) 
-  => UserModel.fromSnapshot(e),).toList());
+  String? currEmail = user!.email;
+
+  final snapshot = await db.collection("users").where("email", isEqualTo: currEmail).get();
+
+  final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
+  
+  return userData;
+
 }
 
 
+// This currently gives a list of all users. For households, create a collection of households
+// that have a string of user ids as the roommates and a roommate count
+// on the account page have an option to "join a household" and be able to join the household by name
+// create a household

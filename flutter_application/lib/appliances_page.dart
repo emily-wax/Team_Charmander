@@ -19,9 +19,8 @@ class _AppliancesPageState extends State<AppliancesPage> {
         title: Text('Appliances'),
       ),
       body: Container(
+        padding: EdgeInsets.all(8),
         color: Colors.lightBlue[100],
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
             Expanded(
@@ -37,63 +36,69 @@ class _AppliancesPageState extends State<AppliancesPage> {
                   return GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 0.8,
                     ),
                     itemCount: appliances.length,
                     itemBuilder: (context, index) {
                       var appliance = appliances[index].data();
                       bool isClaimed = appliance['claimed'] ?? false;
                       String applianceName = appliances[index].id; // Get the document ID as the appliance name
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0), // Add padding to create space between the boxes
-                        child: Card(
-                          color: Colors.lightBlue[50],
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: isClaimed ? Colors.red : Colors.green,
-                                radius: 30,
-                                child: Icon(
-                                  isClaimed ? Icons.clear : Icons.check,
-                                  color: Colors.white,
-                                  size: 36,
-                                ),
+                      return Card(
+                        color: Colors.lightBlue[50],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: isClaimed ? Colors.red : Colors.green,
+                              radius: 30,
+                              child: Icon(
+                                isClaimed ? Icons.clear : Icons.check,
+                                color: Colors.white,
                               ),
-                              SizedBox(height: 6),
-                              Text(
-                                applianceName,
-                                style: TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              applianceName,
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(height: 6),
-                              isClaimed && appliance['claimedBy'] != FirebaseAuth.instance.currentUser?.uid
-                                  ? SizedBox()
-                                  : ElevatedButton(
-                                      onPressed: () {
-                                        if (isClaimed) {
-                                          _unclaimAppliance(appliances[index].id);
-                                        } else {
-                                          _claimAppliance(appliances[index].id);
-                                        }
-                                      },
-                                      child: Text(isClaimed ? 'Unclaim' : 'Claim'),
-                                    ),
-                            ],
-                          ),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center, // Aligns the buttons horizontally to the center
+                              children: [
+                                isClaimed && appliance['claimedBy'] != FirebaseAuth.instance.currentUser?.uid
+                                    ? SizedBox()
+                                    : ElevatedButton(
+                                        onPressed: () {
+                                          if (isClaimed) {
+                                            _unclaimAppliance(appliances[index].id);
+                                          } else {
+                                            _claimAppliance(appliances[index].id);
+                                          }
+                                        },
+                                        child: Text(isClaimed ? 'Unclaim' : 'Claim'),
+                                      ),
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () => _deleteApplianceDialog(context, appliances[index].id),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       );
-                    },
 
+                    },
                   );
                 },
               ),
             ),
             _buildAddApplianceButton(),
           ],
-        ),
         ),
       ),
     );
@@ -153,43 +158,69 @@ class _AppliancesPageState extends State<AppliancesPage> {
     );
   }
 
-  void _claimAppliance(String applianceId) async {
-  // Get the current user's ID
-  String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-  // If userId is null, handle the case where the user is not signed in
-  if (userId == null) {
-    // Handle the case where the user is not signed in
-    print('User is not signed in.');
-    return;
-  }
-
-  // Get the appliance document from Firestore
-  DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('appliances').doc(applianceId).get();
-
-  // Get the current claim status and claimed by user ID
-  bool isClaimed = applianceSnapshot['claimed'];
-  String? claimedBy = applianceSnapshot['claimedBy'];
-
-  // Check if the appliance is already claimed by a different user
-  if (isClaimed && claimedBy != userId) {
-    // Disable the claim button for other users
-    print('Appliance is already claimed by a different user.');
-    return;
-  }
-
-  // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
-  await FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
-    'claimed': true,
-    'claimedBy': userId, // Use the current user's ID
-    'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
-  });
+  void _deleteApplianceDialog(BuildContext context, String applianceId) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Delete Appliance'),
+        content: Text('Are you sure you want to delete this appliance?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              _deleteAppliance(applianceId);
+              Navigator.of(context).pop();
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 
+  void _claimAppliance(String applianceId) async {
+    // Get the current user's ID
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    // If userId is null, handle the case where the user is not signed in
+    if (userId == null) {
+      // Handle the case where the user is not signed in
+      print('User is not signed in.');
+      return;
+    }
+
+    // Get the appliance document from Firestore
+    DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('appliances').doc(applianceId).get();
+
+    // Get the current claim status and claimed by user ID
+    bool isClaimed = applianceSnapshot['claimed'];
+    String? claimedBy = applianceSnapshot['claimedBy'];
+
+    // Check if the appliance is already claimed by a different user
+    if (isClaimed && claimedBy != userId) {
+      // Disable the claim button for other users
+      print('Appliance is already claimed by a different user.');
+      return;
+    }
+
+    // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
+    await FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
+      'claimed': true,
+      'claimedBy': userId, // Use the current user's ID
+      'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
+    });
+  }
+
   void _unclaimAppliance(String applianceId) {
     // Clear the claimedBy field when unclaim
-// Clear the claimedBy field when unclaiming the appliance
     FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
       'claimed': false,
       'claimedBy': null,
@@ -210,6 +241,33 @@ class _AppliancesPageState extends State<AppliancesPage> {
       // Handle any errors that occur during adding the appliance
       print('Error adding appliance: $error');
     });
+  }
+
+  void _confirmDeleteAppliance(String applianceId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Appliance'),
+          content: Text('Are you sure you want to delete this appliance?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteAppliance(applianceId);
+                Navigator.of(context).pop();
+              },
+              child: Text('Yes'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _deleteAppliance(String applianceId) {

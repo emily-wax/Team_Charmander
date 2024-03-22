@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'second_page.dart';
 import 'fourth_page.dart';
+import 'chores_page.dart';
 import 'appliances_page.dart'; // Import the appliances page
 
 class HomePage extends StatelessWidget {
@@ -44,7 +44,7 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SecondPage()),
+                    MaterialPageRoute(builder: (context) => Chores()),
                   );
                 },
                 child: const Text(

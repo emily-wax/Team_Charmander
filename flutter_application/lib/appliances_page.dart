@@ -18,110 +18,178 @@ class _AppliancesPageState extends State<AppliancesPage> {
       appBar: AppBar(
         title: Text('Appliances'),
       ),
-      body: Column(
-        children: [
-          _buildAddApplianceField(),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance.collection('appliances').snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                var appliances = snapshot.data!.docs;
-                return ListView.builder(
-                  itemCount: appliances.length,
-                  itemBuilder: (context, index) {
-                    var appliance = appliances[index].data();
-                    bool isClaimed = appliance['claimed'] ?? false;
-                    String applianceName = appliances[index].id; // Get the document ID as the appliance name
-                    Timestamp? claimedAt = appliance['claimedAt'];
-                    String? claimedAtString = claimedAt != null
-                        ? 'Claimed at: ${DateTime.fromMillisecondsSinceEpoch(claimedAt.seconds * 1000)}'
-                        : null;
-                    return ListTile(
-                      title: Text(applianceName),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(isClaimed ? 'Claimed by: ${appliance['claimedBy']}' : 'Available'),
-                          if (claimedAtString != null) Text(claimedAtString),
-                        ],
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          isClaimed
-                              ? TextButton(
-                                  onPressed: () => _unclaimAppliance(appliances[index].id),
-                                  child: Text('Unclaim'),
-                                )
-                              : TextButton(
-                                  onPressed: () => _claimAppliance(appliances[index].id),
-                                  child: Text('Claim'),
-                                ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _deleteAppliance(appliances[index].id),
-                          ),
-                        ],
-                      ),
+      body: Container(
+        color: Colors.lightBlue[100],
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance.collection('appliances').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(),
                     );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                  }
+                  var appliances = snapshot.data!.docs;
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: appliances.length,
+                    itemBuilder: (context, index) {
+                      var appliance = appliances[index].data();
+                      bool isClaimed = appliance['claimed'] ?? false;
+                      String applianceName = appliances[index].id; // Get the document ID as the appliance name
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0), // Add padding to create space between the boxes
+                        child: Card(
+                          color: Colors.lightBlue[50],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: isClaimed ? Colors.red : Colors.green,
+                                radius: 30,
+                                child: Icon(
+                                  isClaimed ? Icons.clear : Icons.check,
+                                  color: Colors.white,
+                                  size: 36,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                applianceName,
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              isClaimed && appliance['claimedBy'] != FirebaseAuth.instance.currentUser?.uid
+                                  ? SizedBox()
+                                  : ElevatedButton(
+                                      onPressed: () {
+                                        if (isClaimed) {
+                                          _unclaimAppliance(appliances[index].id);
+                                        } else {
+                                          _claimAppliance(appliances[index].id);
+                                        }
+                                      },
+                                      child: Text(isClaimed ? 'Unclaim' : 'Claim'),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
 
-  Widget _buildAddApplianceField() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _applianceNameController,
-              decoration: InputDecoration(
-                hintText: 'Enter appliance name',
+                  );
+                },
               ),
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _addAppliance(_applianceNameController.text),
-          ),
-        ],
+            _buildAddApplianceButton(),
+          ],
+        ),
+        ),
       ),
     );
   }
 
-  void _claimAppliance(String applianceId) {
-    // Get the current user's ID
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
-
-    // If userId is null, handle the case where the user is not signed in
-    if (userId == null) {
-      // Handle the case where the user is not signed in
-      print('User is not signed in.');
-      return;
-    }
-
-    // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
-    FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
-      'claimed': true,
-      'claimedBy': userId, // Use the current user's ID
-      'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
-    });
+  Widget _buildAddApplianceButton() {
+    return GestureDetector(
+      onTap: () {
+        _addApplianceDialog(context);
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 30,
+        ),
+      ),
+    );
   }
 
+  void _addApplianceDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add Appliance'),
+          content: TextField(
+            controller: _applianceNameController,
+            decoration: InputDecoration(
+              hintText: 'Enter appliance name',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _addAppliance(_applianceNameController.text);
+                Navigator.of(context).pop();
+              },
+              child: Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _claimAppliance(String applianceId) async {
+  // Get the current user's ID
+  String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+  // If userId is null, handle the case where the user is not signed in
+  if (userId == null) {
+    // Handle the case where the user is not signed in
+    print('User is not signed in.');
+    return;
+  }
+
+  // Get the appliance document from Firestore
+  DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('appliances').doc(applianceId).get();
+
+  // Get the current claim status and claimed by user ID
+  bool isClaimed = applianceSnapshot['claimed'];
+  String? claimedBy = applianceSnapshot['claimedBy'];
+
+  // Check if the appliance is already claimed by a different user
+  if (isClaimed && claimedBy != userId) {
+    // Disable the claim button for other users
+    print('Appliance is already claimed by a different user.');
+    return;
+  }
+
+  // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
+  await FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
+    'claimed': true,
+    'claimedBy': userId, // Use the current user's ID
+    'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
+  });
+}
+
+
   void _unclaimAppliance(String applianceId) {
-    // Clear the claimedBy field when unclaiming the appliance
+    // Clear the claimedBy field when unclaim
+// Clear the claimedBy field when unclaiming the appliance
     FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
       'claimed': false,
       'claimedBy': null,

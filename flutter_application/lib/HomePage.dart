@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'second_page.dart';
-import 'third_page.dart';
 import 'fourth_page.dart';
 import 'appliances_page.dart'; // Import the appliances page
 
@@ -58,19 +57,6 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ThirdPage()),
-                  );
-                },
-                child: const Text(
-                  'Appliances',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
                     MaterialPageRoute(builder: (context) => const FourthPage()),
                   );
                 },
@@ -88,7 +74,7 @@ class HomePage extends StatelessWidget {
                   );
                 },
                 child: Text(
-                  'Appliances Test',
+                  'Appliances',
                   style: TextStyle(fontSize: 20),
                 ),
               ),

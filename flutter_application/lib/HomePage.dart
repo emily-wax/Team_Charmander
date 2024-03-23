@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'fourth_page.dart';
 import 'chores_page.dart';
-import 'appliances_page.dart'; // Import the appliances page
+import 'appliances_page.dart';
+import 'calendar_page.dart'; // Import the CalendarPage
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key});
@@ -66,15 +67,28 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              ElevatedButton( // New button added for navigating to AppliancesPage
+              ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => AppliancesPage()),
                   );
                 },
-                child: Text(
+                child: const Text(
                   'Appliances',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CalendarPage()),
+                  );
+                },
+                child: const Text(
+                  'Calendar',
                   style: TextStyle(fontSize: 20),
                 ),
               ),

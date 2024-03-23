@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'auth_service.dart'; // Import the AuthService
-import 'HomePage.dart'; // Import the HomePage
-import 'SignInPage.dart'; // Import the SignInPage
+import 'auth_service.dart';
+import 'HomePage.dart';
+import 'SignInPage.dart';
+import 'calendar_page.dart'; // Import the CalendarPage
 
 final FirebaseOptions firebaseOptions = FirebaseOptions(
   apiKey: "AIzaSyC_5CMA0uX6Dw8PLvlJs4Y8hzFU1bayZtg",
   authDomain: "team-charmander-482.firebaseapp.com",
-  // databaseURL: "https://console.firebase.google.com/u/1/project/team-charmander-482/firestore/data/~2F",
   projectId: "team-charmander-482",
   storageBucket: "team-charmander-482.appspot.com",
   messagingSenderId: "1026902486548",
   appId: "1:1026902486548:web:9a624b1af755490ce60101",
   measurementId: "G-HE791BZ4WF"
 );
+
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: firebaseOptions);

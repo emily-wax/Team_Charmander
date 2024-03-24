@@ -6,6 +6,8 @@ import 'household_join.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FourthPage extends StatelessWidget {
+  const FourthPage({super.key});
+
   @override
   Widget build(BuildContext context) {
 

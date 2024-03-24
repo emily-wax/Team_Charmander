@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  provider: 6.1.2
+  shared_preferences: ^2.0.12
   firebase_core: ^2.0.0
 
 
@@ -39,8 +41,10 @@ dependencies:
 
   # Firebase Database (as per the tutorial in https://www.youtube.com/watch?v=sz4slPFwEvs&ab_channel=HeyFlutter%E2%80%A4com at 1:59)
   cloud_firestore: ^4.15.5
-  cloud_functions: ^4.6.5
+  cloud_functions: ^4.6.8
   firebase_auth: ^4.17.6
+  http: ^1.2.0
+  syncfusion_flutter_calendar: ^25.1.35
   
 dev_dependencies:
   flutter_test:

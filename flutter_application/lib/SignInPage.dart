@@ -4,6 +4,8 @@ import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
 
 class SignInPage extends StatefulWidget {
+  const SignInPage({super.key});
+
   @override
   _SignInPageState createState() => _SignInPageState();
 }
@@ -33,16 +35,16 @@ class _SignInPageState extends State<SignInPage> {
             children: [
               Text(
                 isSignUp ? 'Sign Up' : 'Sign In',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.blue, // Blue color for "Sign In" or "Sign Up" text
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: emailController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Email',
                   filled: true,
                   fillColor: Colors.white,
@@ -54,10 +56,10 @@ class _SignInPageState extends State<SignInPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextFormField(
                 controller: passwordController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Password',
                   filled: true,
                   fillColor: Colors.white,
@@ -70,7 +72,7 @@ class _SignInPageState extends State<SignInPage> {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: isLoading ? null : () => _authenticate(),
                 style: ElevatedButton.styleFrom(
@@ -78,7 +80,7 @@ class _SignInPageState extends State<SignInPage> {
                 ),
                 child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               TextButton(
                 onPressed: () {
                   setState(() {
@@ -86,7 +88,7 @@ class _SignInPageState extends State<SignInPage> {
                   });
                 },
                 style: TextButton.styleFrom(
-                  backgroundColor: Colors.blue, // Blue color for "already have an account?"
+                  foregroundColor: Colors.blue, // Blue color for "already have an account?"
                 ),
                 child: Text(
                   isSignUp
@@ -94,7 +96,7 @@ class _SignInPageState extends State<SignInPage> {
                       : 'Don\'t have an account? Sign Up',
                 ),
               ),
-              if (isLoading) CircularProgressIndicator(),
+              if (isLoading) const CircularProgressIndicator(),
             ],
           ),
         ),
@@ -127,7 +129,7 @@ class _SignInPageState extends State<SignInPage> {
         // Navigate to HomePage after signing in/up
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       } catch (e) {
         // Handle sign-in/up errors, e.g., show an error message
@@ -135,7 +137,7 @@ class _SignInPageState extends State<SignInPage> {
 
         // Show an error snackbar or dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("Authentication failed. Please check your credentials."),
           ),
         );

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import 'third_page.dart';
 import 'fourth_page.dart';
 import 'chores_page.dart';
+import 'appliances_page.dart';
+import 'calendar_page.dart'; // Import the CalendarPage
 
 class HomePage extends StatelessWidget {
+  const HomePage({Key? key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Welcome Home'),
+        title: const Text('Welcome Home'),
         actions: [
           IconButton(
-            icon: Icon(Icons.home),
+            icon: const Icon(Icons.home),
             onPressed: () {
               print('Home icon pressed!');
             },
@@ -24,12 +27,12 @@ class HomePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Icon(
+              const Icon(
                 Icons.house,
                 size: 100,
                 color: Colors.green,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
                 'Welcome to Your House!',
                 style: TextStyle(
@@ -37,7 +40,7 @@ class HomePage extends StatelessWidget {
                   color: Theme.of(context).primaryColor,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -45,34 +48,47 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => Chores()),
                   );
                 },
-                child: Text(
+                child: const Text(
                   'Chores',
                   style: TextStyle(fontSize: 20),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => ThirdPage()),
+                    MaterialPageRoute(builder: (context) => const FourthPage()),
                   );
                 },
-                child: Text(
+                child: const Text(
+                  'Account',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AppliancesPage()),
+                  );
+                },
+                child: const Text(
                   'Appliances',
                   style: TextStyle(fontSize: 20),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => FourthPage()),
+                    MaterialPageRoute(builder: (context) => const CalendarPage()),
                   );
                 },
-                child: Text(
-                  'Account',
+                child: const Text(
+                  'Calendar',
                   style: TextStyle(fontSize: 20),
                 ),
               ),

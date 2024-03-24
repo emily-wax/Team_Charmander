@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
 import 'household_create.dart';
+import 'household_join.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FourthPage extends StatelessWidget {
@@ -44,7 +45,17 @@ class FourthPage extends StatelessWidget {
                   'Create a Household',
                   style: TextStyle(fontSize: 20),
                 ),
-              )
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdJoin()),);
+                }, 
+                child: Text(
+                  'Join a Household',
+                  style: TextStyle(fontSize: 20),
+                ),
+              ),
             ]
           )
         ),

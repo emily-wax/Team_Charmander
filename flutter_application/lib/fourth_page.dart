@@ -69,10 +69,4 @@ Future<UserModel> _readData() async {
 
 }
 
-
-// This currently gives a list of all users. For households, create a collection of households
-// that have a string of user ids as the roommates and a roommate count
-// on the account page have an option to "join a household" and be able to join the household by name
-// create a household
-
 /* TODO: "create household" and "join household" buttons that link to forms */

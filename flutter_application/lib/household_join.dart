@@ -116,3 +116,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
     super.dispose();
   }
 }
+
+// EW TODO: do we want to prevent people from joining multiple households??
+
+// EW NOTE: we may want appliances and such to be a subcollection of households

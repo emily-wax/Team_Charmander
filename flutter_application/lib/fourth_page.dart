@@ -1,31 +1,51 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
+import 'household_create.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FourthPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
       ),
+
       body: Container(
         color: Colors.orange, // Set the background color to orange
         child: Center(
-          child: FutureBuilder(
-            future: _readData(),
-            builder:( (context, snapshot) {
-              if( snapshot.connectionState == ConnectionState.done){
-                if(snapshot.hasData){
-                  UserModel? user = snapshot.data as UserModel;
-                  return Center(child: Text( user.email! ) );
-                }
-              } 
-                
-              return Center(child: CircularProgressIndicator());
+          child: Column(
+            mainAxisAlignment:  MainAxisAlignment.center,
+            children: <Widget>[ 
+              FutureBuilder(
+                future: _readData(),
+                builder:( (context, snapshot) {
+                  if( snapshot.connectionState == ConnectionState.done){
+                    if(snapshot.hasData){
+                      UserModel? user = snapshot.data as UserModel;
 
-            }),
+                      // TODO: find a better way to display user data
+
+                      return Center(child: Text( user.email! ) );
+                    }
+                  } 
+      
+                  return Center(child: CircularProgressIndicator());
+                }),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdCreate()),);
+                }, 
+                child: Text(
+                  'Create a Household',
+                  style: TextStyle(fontSize: 20),
+                ),
+              )
+            ]
           )
         ),
       ),
@@ -54,3 +74,5 @@ Future<UserModel> _readData() async {
 // that have a string of user ids as the roommates and a roommate count
 // on the account page have an option to "join a household" and be able to join the household by name
 // create a household
+
+/* TODO: "create household" and "join household" buttons that link to forms */

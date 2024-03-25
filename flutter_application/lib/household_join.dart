@@ -25,14 +25,33 @@ class HouseholdJoinForm extends StatefulWidget {
 }
 
 class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
+
   final _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
   late User _currentUser;
+  List<String> _households = []; // List to store available users
+  String? selectedHousehold;
+
 
   @override
   void initState() {
     super.initState();
     _currentUser = FirebaseAuth.instance.currentUser!;
+    _loadHouseholds();
+  }
+
+  Future<void> _loadHouseholds() async {
+     try {
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('households').get();
+      setState(() {
+        _households = querySnapshot.docs
+            .map((doc) => (doc.data() as Map<String, dynamic>)['name'] as String)
+            .toList();
+      });
+    } catch (e) {
+      print("Error loading users: $e");
+    }
   }
 
   @override
@@ -48,17 +67,32 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Please enter the name of the household you would like to join.',
-                ),
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter the name';
-                  }
-                  return null;
+              // TextFormField(
+              //   controller: _nameController,
+              //   decoration: InputDecoration(
+              //     labelText: 'Please enter the name of the household you would like to join.',
+              //   ),
+              //   validator: (value) {
+              //     if (value!.isEmpty) {
+              //       return 'Please enter the name';
+              //     }
+              //     return null;
+              //   },
+              // ),
+              DropdownButtonFormField<String>(
+                value: selectedHousehold,
+                onChanged: (value) {
+                  setState(() {
+                    selectedHousehold = value;
+                  });
                 },
+                items: _households.map((String household) {
+                  return DropdownMenuItem<String>(
+                    value: household,
+                    child: Text(household),
+                  );
+                }).toList(),
+                hint: Text('Select Household'),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -66,9 +100,9 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       // Process the data
-                      String name = _nameController.text;
-                      // TODO: add current user email to the household of that name
-                      addToObjectArray(name);
+                      String? name = selectedHousehold;
+                  
+                      addToObjectArray(name!);
                     }
                   },
                   child: Text('Submit'),
@@ -98,6 +132,12 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           existingArray.add(_currentUser.email);
           // Update the document with the modified array
           document.reference.update({'roommates': existingArray}).then((_) {
+
+            // TODO: actually display success upon adding 
+            //TODO: can't join same household twice
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Household joined successfully'),
+            ));
             print('String added to array successfully');
           }).catchError((error) {
             print('Failed to add string to array: $error');

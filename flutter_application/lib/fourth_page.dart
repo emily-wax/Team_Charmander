@@ -56,7 +56,7 @@ class _FourthPageState extends State<FourthPage> {
                     if(snapshot.hasData){
                       UserModel? user = snapshot.data as UserModel;
 
-                      // TODO: find a better way to display user data ... akso add in household info
+                      // TODO: find a better way to display user data ... 
 
                       // Display current user email and households
                       return Column(
@@ -82,8 +82,6 @@ class _FourthPageState extends State<FourthPage> {
                           
                         ],
                       );
-
-                      //return Center(child: Text( user.email! ) );
                     }
                   } 
       
@@ -133,8 +131,6 @@ Future<UserModel> _readData() async {
   return userData;
 
 }
-
-/* TODO: "create household" and "join household" buttons that link to forms */
 
 class HouseholdModel{
   final String name;

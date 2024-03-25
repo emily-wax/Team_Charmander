@@ -15,6 +15,7 @@ class _FourthPageState extends State<FourthPage> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<HouseholdModel> _households = [];
+  bool _showJoinButton = true; // boolean to control visibility of Join button
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _FourthPageState extends State<FourthPage> {
           .get();
       setState(() {
         _households = snapshot.docs.map((doc) => HouseholdModel.fromSnapshot(doc)).toList();
+        _showJoinButton = _households.isEmpty;
       });
     }
   }
@@ -99,15 +101,19 @@ class _FourthPageState extends State<FourthPage> {
                 ),
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdJoin()),);
-                }, 
-                child: Text(
-                  'Join a Household',
-                  style: TextStyle(fontSize: 20),
+              Visibility(
+                visible: _showJoinButton,
+                child:
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdJoin()),);
+                  }, 
+                  child: Text(
+                    'Join a Household',
+                    style: TextStyle(fontSize: 20),
+                  ),
                 ),
-              ),
+              )
             ]
           )
         ),

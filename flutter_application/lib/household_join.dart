@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
+import 'fourth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -127,10 +128,15 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
             document.reference.update({'roommates': existingArray}).then((_) {
 
               // TODO: actually display success upon adding 
-              //TODO: can't join same household twice
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('Household joined successfully'),
               ));
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FourthPage()),
+              );
+
             }).catchError((error) {
               print('Failed to add string to array: $error');
             }); 

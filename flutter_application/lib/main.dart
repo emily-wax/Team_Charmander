@@ -24,13 +24,13 @@ Future main() async {
   AuthService authService = AuthService();
   bool isUserSignedIn = await authService.isUserSignedIn();
 
-  runApp(MyApp(isUserSignedIn: isUserSignedIn));
+  runApp(MyApp(true, isUserSignedIn: isUserSignedIn,));
 }
 
 class MyApp extends StatelessWidget {
   final bool isUserSignedIn;
 
-  MyApp({required this.isUserSignedIn});
+  MyApp(bool bool, {required this.isUserSignedIn});
 
   @override
   Widget build(BuildContext context) {

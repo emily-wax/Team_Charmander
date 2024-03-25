@@ -117,7 +117,8 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           List<dynamic> existingArray = document.data()['roommates'] ?? [];
           // Add the string to the array
 
-          // TODO: check if currnt user email is already in array
+          // TODO: check if the max roommate count has already been hit
+
           if(existingArray.contains( _currentUser.email)){
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('You are already in this household.'),

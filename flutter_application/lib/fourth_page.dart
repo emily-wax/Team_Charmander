@@ -5,6 +5,8 @@ import 'household_create.dart';
 import 'household_join.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// TODO add a password for joining the house
+
 class FourthPage extends StatefulWidget {
   @override
   _FourthPageState createState() => _FourthPageState();
@@ -77,7 +79,16 @@ class _FourthPageState extends State<FourthPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: _households[index].roommates.map((email) => Text(email)).toList(),
                                   ),
-                                  trailing: Text("Number of Household Members: ${_households[index].roommates.length}"),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("Number of Household Members: ${_households[index].roommates.length}"),
+                                      SizedBox(width: 10),
+                                      
+
+                                    ],
+                                    )
+                                    
                                 );
                               }
                             )

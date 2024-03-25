@@ -5,6 +5,9 @@ import 'household_create.dart';
 import 'household_join.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// TODO: add a password for joining the house
+// TODO: household auto-deletes when no members are in? 
+
 class FourthPage extends StatefulWidget {
   @override
   _FourthPageState createState() => _FourthPageState();
@@ -15,6 +18,7 @@ class _FourthPageState extends State<FourthPage> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<HouseholdModel> _households = [];
+  bool _showJoinButton = true; // boolean to control visibility of Join button
 
   @override
   void initState() {
@@ -31,9 +35,50 @@ class _FourthPageState extends State<FourthPage> {
           .get();
       setState(() {
         _households = snapshot.docs.map((doc) => HouseholdModel.fromSnapshot(doc)).toList();
+        _showJoinButton = _households.isEmpty;
       });
     }
   }
+
+void removeFromHousehold(String houseName) {
+  User? _currentUser = _auth.currentUser;
+
+  FirebaseFirestore.instance.collection('households')
+    .where('name', isEqualTo: houseName)
+    .get()
+    .then((querySnapshot) {
+      if (querySnapshot.docs.isNotEmpty) {
+        var document = querySnapshot.docs.first;
+        List<dynamic> existingRoommates = List.from(document.data()['roommates']);
+        if (existingRoommates.contains(_currentUser!.email)) {
+          existingRoommates.remove(_currentUser.email);
+          document.reference.update({'roommates': existingRoommates}).then((_) {
+            setState(() {
+              _households = _households.map((household) {
+                if (household.name == houseName) {
+                  return HouseholdModel(
+                    name: household.name,
+                    max_roommate_count: household.max_roommate_count,
+                    roommates: existingRoommates.cast<String>(),
+                  );
+                }
+                return household;
+              }).toList();
+            });
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('You have left the household.'),
+            ));
+          }).catchError((error) {
+            print('Failed to update roommates list: $error');
+          });
+        }
+      } else {
+        print('Household not found.');
+      }
+    }).catchError((error) {
+      print('Error retrieving household: $error');
+    });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +108,7 @@ class _FourthPageState extends State<FourthPage> {
                         children: [
                           Text(user.email!),
                           SizedBox(height: 20),
-                          Text('User Households:'),
+                          Text('User Household:'),
                           SizedBox(height: 10,),
                           ListView.builder(
                               shrinkWrap: true,
@@ -75,7 +120,21 @@ class _FourthPageState extends State<FourthPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: _households[index].roommates.map((email) => Text(email)).toList(),
                                   ),
-                                  trailing: Text("Number of Household Members: ${_households[index].roommates.length}"),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("Number of Household Members: ${_households[index].roommates.length}"),
+                                      SizedBox(width: 10),
+                                      IconButton(
+                                        onPressed: () {
+                                          removeFromHousehold(_households[index].name);
+                                        } , 
+                                        icon: Icon(Icons.delete),
+                                      )
+
+                                    ],
+                                    )
+                                    
                                 );
                               }
                             )
@@ -89,25 +148,34 @@ class _FourthPageState extends State<FourthPage> {
                 }),
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdCreate()),);
-                }, 
-                child: Text(
-                  'Create a Household',
-                  style: TextStyle(fontSize: 20),
-                ),
+              Visibility(
+                visible: _showJoinButton,
+                child: 
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdCreate()),);
+                    }, 
+                    child: Text(
+                      'Create a Household',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                  ),
               ),
+
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdJoin()),);
-                }, 
-                child: Text(
-                  'Join a Household',
-                  style: TextStyle(fontSize: 20),
+              Visibility(
+                visible: _showJoinButton,
+                child:
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => HouseholdJoin()),);
+                  }, 
+                  child: Text(
+                    'Join a Household',
+                    style: TextStyle(fontSize: 20),
+                  ),
                 ),
-              ),
+              )
             ]
           )
         ),
@@ -131,6 +199,7 @@ Future<UserModel> _readData() async {
   return userData;
 
 }
+
 
 class HouseholdModel{
   final String name;

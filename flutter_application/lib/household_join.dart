@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
+import 'fourth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -67,18 +68,6 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // TextFormField(
-              //   controller: _nameController,
-              //   decoration: InputDecoration(
-              //     labelText: 'Please enter the name of the household you would like to join.',
-              //   ),
-              //   validator: (value) {
-              //     if (value!.isEmpty) {
-              //       return 'Please enter the name';
-              //     }
-              //     return null;
-              //   },
-              // ),
               DropdownButtonFormField<String>(
                 value: selectedHousehold,
                 onChanged: (value) {
@@ -117,8 +106,6 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
 
   void addToObjectArray( String houseName ){
 
-    // TODO: add a snackbar upon success
-
     FirebaseFirestore.instance.collection('households')
       .where('name', isEqualTo: houseName)
       .get()
@@ -129,19 +116,32 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           // Get the existing array field
           List<dynamic> existingArray = document.data()['roommates'] ?? [];
           // Add the string to the array
-          existingArray.add(_currentUser.email);
-          // Update the document with the modified array
-          document.reference.update({'roommates': existingArray}).then((_) {
 
-            // TODO: actually display success upon adding 
-            //TODO: can't join same household twice
+          // TODO: check if the max roommate count has already been hit
+
+          if(existingArray.contains( _currentUser.email)){
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Household joined successfully'),
-            ));
-            print('String added to array successfully');
-          }).catchError((error) {
-            print('Failed to add string to array: $error');
-          });
+              content: Text('You are already in this household.'),
+            ));            
+          } else {
+            existingArray.add(_currentUser.email);
+            // Update the document with the modified array
+            document.reference.update({'roommates': existingArray}).then((_) {
+
+              // TODO: actually display success upon adding 
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Household joined successfully'),
+              ));
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FourthPage()),
+              );
+
+            }).catchError((error) {
+              print('Failed to add string to array: $error');
+            }); 
+          }
         } else {
             print('Object with name not found');
           }

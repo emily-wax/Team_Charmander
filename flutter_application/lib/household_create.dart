@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'SignInPage.dart';
+import 'fourth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -108,6 +109,11 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Object submitted successfully'),
       ));
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => FourthPage()),
+      );
     }).catchError((error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to submit object: $error'),

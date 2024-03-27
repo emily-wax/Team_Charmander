@@ -1,7 +1,5 @@
-import 'dart:html';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'HomePage.dart';
 
 void main() {
   runApp(Chores());
@@ -40,12 +38,13 @@ class _ToDoListState extends State<ToDoList> {
   // }
 
   // add chore to firestore given an assignee that was selected from a dropdown
-  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
+  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline, int? duration) {
     choresCollection.add({
       'choreName': choreName,
       'assignee': assignee,
       'isCompleted': false,
       'deadline': deadline,
+      'duration': duration,
     });
   }
 
@@ -58,6 +57,13 @@ class _ToDoListState extends State<ToDoList> {
     super.initState();
     _loadRoommates(); // Load users from Firestore when the dialog is initialized
   }
+
+  bool autoAssignChecked = false;
+  DateTime? selectedDate;
+  String? selectedUser;
+  List<String> _users = []; // List to store available users
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  int? _selectedDuration = 5; // placeholder
 
   Future<void> _loadRoommates() async {
      try {
@@ -73,11 +79,151 @@ class _ToDoListState extends State<ToDoList> {
     }
   }
 
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+    );
 
-  bool autoAssignChecked = false;
-  DateTime? selectedDate;
-  String? selectedUser;
-  List<String> _users = []; // List to store available users
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+      });
+    }
+  }
+
+  void _showAddTaskDialog(BuildContext context) {
+    // bool autoAssignChecked = false;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Task'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+          return Column(
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter task title',
+                ),
+              ),
+              DropdownButtonFormField<String>(
+                value: selectedUser,
+                onChanged: (value) {
+                  setState(() {
+                    selectedUser = value;
+                  });
+                },
+                items: _users.map((String user) {
+                  return DropdownMenuItem<String>(
+                    value: user,
+                    child: Text(user),
+                  );
+                }).toList(),
+                hint: Text('Select Assignee'),
+              ),
+             Row(
+              children: [
+                Checkbox(
+                  value: autoAssignChecked,
+                  onChanged: (bool? value) {
+                    setState(() =>
+                      autoAssignChecked = value!);
+                    
+                  },
+                ),
+                const Text('Auto-assign this task'),
+              ],
+            ),
+          Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'Select Duration:',
+            ),
+            SizedBox(height: 20),
+            DropdownButton<int>(
+              value: _selectedDuration,
+              onChanged: (int? newValue) {
+                setState(() {
+                  _selectedDuration = newValue;
+                });
+              },
+              items: List.generate(4, (index) => (index + 1) * 5)
+                  .map<DropdownMenuItem<int>>(
+                    (int value) => DropdownMenuItem<int>(
+                      value: value,
+                      child: Text('$value minutes'),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+            Row(
+              children: [
+                const Text('Select Deadline: '),
+                ElevatedButton(
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2101),
+                    );
+
+                    if (pickedDate != null &&
+                        pickedDate != selectedDate) {
+                      setState(() {
+                        selectedDate = pickedDate;
+                      });
+                    }
+                  },
+                  child: Text(selectedDate != null
+                      ? 'Change Deadline'
+                      : 'Set Deadline...'),
+                ),
+                if (selectedDate != null) Text('Deadline: $selectedDate'),
+              ],
+            ),
+            ],
+          );
+            },
+          ),
+           
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String choreName = titleController.text.trim();
+                // String assignee = assigneeController.text.trim();
+                Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
+
+                if (choreName.isNotEmpty){
+                  if (selectedUser != null){
+                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline, _selectedDuration);
+                  }
+                //   else if (assignee.isNotEmpty){
+                //      _addChoreToFirestore(choreName, assignee, deadline);
+                //   }
+                }
+
+                Navigator.of(context).pop();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,114 +301,6 @@ class _ToDoListState extends State<ToDoList> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showAddTaskDialog(BuildContext context) {
-    // bool autoAssignChecked = false;
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Add Task'),
-          content: StatefulBuilder(
-            builder: (context, setState) {
-          return Column(
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  hintText: 'Enter task title',
-                ),
-              ),
-              DropdownButtonFormField<String>(
-                value: selectedUser,
-                onChanged: (value) {
-                  setState(() {
-                    selectedUser = value;
-                  });
-                },
-                items: _users.map((String user) {
-                  return DropdownMenuItem<String>(
-                    value: user,
-                    child: Text(user),
-                  );
-                }).toList(),
-                hint: Text('Select Assignee'),
-              ),
-             Row(
-              children: [
-                Checkbox(
-                  value: autoAssignChecked,
-                  onChanged: (bool? value) {
-                    setState(() =>
-                      autoAssignChecked = value!);
-                    
-                  },
-                ),
-                const Text('Auto-assign this task'),
-              ],
-            ),
-            Row(
-              children: [
-                const Text('Select Deadline: '),
-                ElevatedButton(
-                  onPressed: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2101),
-                    );
-
-                    if (pickedDate != null &&
-                        pickedDate != selectedDate) {
-                      setState(() {
-                        selectedDate = pickedDate;
-                      });
-                    }
-                  },
-                  child: Text(selectedDate != null
-                      ? 'Change Deadline'
-                      : 'Set Deadline...'),
-                ),
-                if (selectedDate != null) Text('Deadline: $selectedDate'),
-              ],
-            ),
-            ],
-          );
-            },
-          ),
-           
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                String choreName = titleController.text.trim();
-                // String assignee = assigneeController.text.trim();
-                Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
-
-                if (choreName.isNotEmpty){
-                  if (selectedUser != null){
-                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);
-                  }
-                //   else if (assignee.isNotEmpty){
-                //      _addChoreToFirestore(choreName, assignee, deadline);
-                //   }
-                }
-
-                Navigator.of(context).pop();
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
@@ -9,9 +11,14 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   late CalendarView _calendarView;
   final CalendarController _calendarController = CalendarController();
   final TextEditingController _eventNameController = TextEditingController();
+  final TextEditingController _startTimeController = TextEditingController();
+  final TextEditingController _endTimeController = TextEditingController();
+  final TextEditingController _userController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
 
   @override
   void initState() {
@@ -44,15 +51,61 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _handleAddEvent() {
+  Future<List<DocumentSnapshot>> _fetchHouseholdsForCurrentUser() async {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('households')
+          .where('roommates', arrayContains: currentUser.email)
+          .get();
+      return snapshot.docs;
+    }
+    return []; // Return an empty list if the current user is null or no households found
+  }
+
+void _handleAddEvent() async {
+  // Fetch households for the current user
+  List<DocumentSnapshot> households = await _fetchHouseholdsForCurrentUser();
+
+  // Check if households are found
+  if (households.isNotEmpty) {
+    // Assume the user is part of only one household for simplicity
+    DocumentSnapshot householdDoc = households.first;
+    String householdId = householdDoc.id;
+
+    // Show dialog to add event
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add Event'),
-          content: TextFormField(
-            controller: _eventNameController,
-            decoration: const InputDecoration(labelText: 'Event Name'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _eventNameController,
+                decoration: const InputDecoration(labelText: 'Event Name'),
+              ),
+              TextFormField(
+                controller: _startTimeController,
+                decoration: const InputDecoration(labelText: 'Start Time'),
+                keyboardType: TextInputType.datetime,
+              ),
+              TextFormField(
+                controller: _endTimeController,
+                decoration: const InputDecoration(labelText: 'End Time'),
+                keyboardType: TextInputType.datetime,
+              ),
+              TextFormField(
+                controller: _userController,
+                decoration: const InputDecoration(labelText: 'User'),
+              ),
+              TextFormField(
+                controller: _dateController,
+                decoration: const InputDecoration(labelText: 'Date'),
+                keyboardType: TextInputType.datetime,
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -63,10 +116,26 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                // Add the event to the calendar using the CalendarController
-                // For demonstration purposes, let's print the event name to the console
-                print('Event added: ${_eventNameController.text}');
-                Navigator.of(context).pop(); // Close the dialog
+                // Add the event to the household's collection
+                FirebaseFirestore.instance
+                    .collection('households')
+                    .doc(householdId)
+                    .collection('events')
+                    .add({
+                  'name': _eventNameController.text,
+                  'startTime': _startTimeController.text,
+                  'endTime': _endTimeController.text,
+                  'user': _userController.text,
+                  'date': _dateController.text,
+                  // Add additional event details here
+                }).then((_) {
+                  // Event added successfully
+                  print('Event added to household: $householdId');
+                  Navigator.of(context).pop(); // Close the dialog
+                }).catchError((error) {
+                  // Handle error if event addition fails
+                  print('Error adding event: $error');
+                });
               },
               child: const Text('Add'),
             ),
@@ -74,7 +143,13 @@ class _CalendarPageState extends State<CalendarPage> {
         );
       },
     );
+  } else {
+    // No households found for the current user
+    print('No households found for the current user');
+    // Show a message or take appropriate action
   }
+}
+
 
   _DataSource _getCalendarDataSource() {
     List<Appointment> appointments = <Appointment>[];
@@ -94,6 +169,10 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void dispose() {
     _eventNameController.dispose();
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    _userController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 }

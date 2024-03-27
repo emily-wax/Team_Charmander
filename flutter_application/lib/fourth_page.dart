@@ -54,16 +54,17 @@ void removeFromHousehold(String houseName) {
           existingRoommates.remove(_currentUser.email);
           document.reference.update({'roommates': existingRoommates}).then((_) {
             setState(() {
-              _households = _households.map((household) {
-                if (household.name == houseName) {
-                  return HouseholdModel(
-                    name: household.name,
-                    max_roommate_count: household.max_roommate_count,
-                    roommates: existingRoommates.cast<String>(),
-                  );
-                }
-                return household;
-              }).toList();
+              // _households = _households.map((household) {
+              //   if (household.name == houseName) {
+              //     return HouseholdModel(
+              //       name: household.name,
+              //       max_roommate_count: household.max_roommate_count,
+              //       roommates: existingRoommates.cast<String>(),
+              //     );
+              //   }
+              //   return household;
+              // }).toList();
+              _fetchHouseholdsForCurrentUser();
             });
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('You have left the household.'),

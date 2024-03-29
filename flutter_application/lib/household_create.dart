@@ -118,8 +118,6 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
       });
 
       // create appliances subcollection
-      // TODO: move this to appliances
-      CollectionReference appliancesRef = householdRef.collection('appliances');
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Failed to submit object: $error'),

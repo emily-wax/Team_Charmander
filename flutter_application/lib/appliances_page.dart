@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 import 'user_model.dart';
-import 'fourth_page.dart';
 
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);

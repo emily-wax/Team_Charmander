@@ -189,5 +189,3 @@ void removeFromHousehold(String houseName) {
   }
 }
 
-// try to move to user model file
-

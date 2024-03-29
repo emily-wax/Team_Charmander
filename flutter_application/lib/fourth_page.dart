@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'household_create.dart';
 import 'household_join.dart';
 import 'user_model.dart';
+import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
@@ -42,7 +43,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
   Future<void> _fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
     if (currentUser != null) {
-      UserModel currUserModel = await _readData() as UserModel;
+      UserModel currUserModel = await readData() as UserModel;
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('households')
           .where('roommates', arrayContains: currentUser.email)
@@ -107,7 +108,7 @@ void removeFromHousehold(String houseName) {
             mainAxisAlignment:  MainAxisAlignment.center,
             children: <Widget>[ 
               FutureBuilder(
-                future: _readData(),
+                future: readData(),
                 builder:( (context, snapshot) {
                   if( snapshot.connectionState == ConnectionState.done){
                     if(snapshot.hasData){
@@ -188,37 +189,5 @@ void removeFromHousehold(String houseName) {
   }
 }
 
-// displays current user data
-Future<UserModel> _readData() async {
-  final db = FirebaseFirestore.instance;
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final User? user = auth.currentUser;
+// try to move to user model file
 
-  String? currEmail = user!.email;
-
-  final snapshot = await db.collection("users").where("email", isEqualTo: currEmail).get();
-
-  final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
-  
-  return userData;
-
-}
-
-
-class HouseholdModel{
-  final String name;
-  final int max_roommate_count;
-  final List<String> roommates;
-
-  HouseholdModel({required this.name, required this.max_roommate_count, required this.roommates});
-
-  factory HouseholdModel.fromSnapshot(DocumentSnapshot snapshot) {
-    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-    List<dynamic> roommates = data['roommates'] != null ? List.from(data['roommates']) : [];
-    return HouseholdModel(
-      name: data['name'],
-      max_roommate_count: data['max_roommate_count'],
-      roommates: roommates.cast<String>(),
-    );
-  }
-}

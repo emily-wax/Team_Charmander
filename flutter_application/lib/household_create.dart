@@ -97,29 +97,35 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     );
   }
 
-  void _saveHouseholdToFirebase( String name, int count ){
-    FirebaseFirestore.instance.collection('households').add({
-      'name': name,
-      'max_roommate_count': count,
-      'roommates': [_currentUser.email],
-    }).then((_) {
-      // Clear the text fields after successful submission
-      _nameController.clear();
-      _countController.clear();
+  void _saveHouseholdToFirebase( String name, int count ) async{
+
+    try{
+      // create reference to household
+      DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
+
+      await householdRef.set(
+        {
+        'name': name,
+        'max_roommate_count': count,
+        'roommates': [_currentUser.email],
+        }
+      ).then((_) {
+        _nameController.clear();
+        _countController.clear();      
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Object submitted successfully'),
+        ));
+      });
+
+      // create appliances subcollection
+      // TODO: move this to appliances
+      CollectionReference appliancesRef = householdRef.collection('appliances');
+    } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Object submitted successfully'),
-      ));
-      
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => FourthPage()),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to submit object: $error'),
-      ));
-    });
-  }
+          content: Text('Failed to submit object: $error'),
+        ));
+    }
+  } 
 
   @override
   void dispose() {

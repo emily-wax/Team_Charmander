@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
+import 'user_model.dart';
+import 'fourth_page.dart';
 
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);
@@ -11,6 +13,17 @@ class AppliancesPage extends StatefulWidget {
 
 class _AppliancesPageState extends State<AppliancesPage> {
   final TextEditingController _applianceNameController = TextEditingController();
+  UserModel? currUserModel;
+
+  @override
+  void initState() {
+    super.initState();
+    getCurrentUser();
+  }
+
+  Future<void> getCurrentUser() async {
+    currUserModel = await readData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +38,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
           children: [
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance.collection('appliances').snapshots(),
+                stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(
@@ -228,9 +241,12 @@ class _AppliancesPageState extends State<AppliancesPage> {
     });
   }
 
-  void _addAppliance(String applianceName) {
+  // TODO: make sure user is in a household
+  void _addAppliance(String applianceName) async {
     // Add a new appliance to Firestore
-    FirebaseFirestore.instance.collection('appliances').doc(applianceName).set({
+    UserModel currUserModel = await readData();
+
+    FirebaseFirestore.instance.collection('households').doc(currUserModel.currHouse).collection('appliances').doc(applianceName).set({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Initialize claimedAt as null
@@ -270,6 +286,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
     );
   }
 
+  // TODO: change reference to subcollection
   void _deleteAppliance(String applianceId) {
     // Delete the appliance document from Firestore
     FirebaseFirestore.instance.collection('appliances').doc(applianceId).delete().then((_) {

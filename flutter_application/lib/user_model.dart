@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-// User model: could be put in a different file in the future but for now is here
+import 'package:firebase_auth/firebase_auth.dart';
 
 class UserModel{
   final String? email;
@@ -29,3 +28,19 @@ class UserModel{
     };
   }
 }
+
+  // displays current user data
+  Future<UserModel> readData() async {
+    final db = FirebaseFirestore.instance;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
+
+    String? currEmail = user!.email;
+
+    final snapshot = await db.collection("users").where("email", isEqualTo: currEmail).get();
+
+    final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
+    
+    return userData;
+
+  }

@@ -253,7 +253,6 @@ class _AppliancesPageState extends State<AppliancesPage> {
   // TODO: make sure user is in a household
   void _addAppliance(String applianceName) async {
     // Add a new appliance to Firestore
-    //serModel currUserModel = await readData();
 
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceName).set({
       'claimed': false,

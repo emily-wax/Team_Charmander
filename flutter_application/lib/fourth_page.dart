@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // TODO: add a password for joining the house
 // TODO: household auto-deletes when no members are in? 
 // TODO: appliances are subcollection now
+// NOTE: user updates could be a lot easier if we used emails as keys
 
 class FourthPage extends StatefulWidget {
   @override
@@ -34,21 +35,35 @@ class _FourthPageState extends State<FourthPage> {
   }
 
 Future<void> updateUserHousehold(String? userId, String householdName) async {
-  try {
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .update({'currHouse': householdName});
-  } catch (e) {
-    print('Error updating user household: $e');
-    // Handle error here, such as showing a snackbar or retrying the update
+
+  QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: userId).get();
+  List<QueryDocumentSnapshot> documents = querySnapshot.docs;
+
+  if(documents.isNotEmpty) {
+    QueryDocumentSnapshot document = documents.first;
+
+    DocumentReference documentReference = document.reference;
+
+    await documentReference.set({'currHouse': householdName}, SetOptions(merge: true));
+  } else {
+    print(' not added ');
   }
+
+  // try {
+  //   await FirebaseFirestore.instance
+  //       .collection('users')
+  //       .where('email', isEqualTo: userId)
+  //       .get()
+  //       .update({'currHouse': householdName});
+  // } catch (e) {
+  //   print('Error updating user household: $e');
+  //   // Handle error here, such as showing a snackbar or retrying the update
+  // }
 }
 
   Future<void> _fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
     if (currentUser != null) {
-      UserModel currUserModel = await readData() as UserModel;
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('households')
           .where('roommates', arrayContains: currentUser.email)
@@ -56,11 +71,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
       setState(() {
         if (snapshot.docs.isNotEmpty){
           _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
-          updateUserHousehold( currUserModel.id, _household!.name);
+          updateUserHousehold( currentUser.email, _household!.name);
           _showJoinButton = false;
         } else {
           _household = null;
-          updateUserHousehold( currUserModel.id, "");
+          updateUserHousehold( currentUser.email, "");
           _showJoinButton = true;
         }
       });
@@ -163,7 +178,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                           children: [
                                             _buildChoiceButton(context, 'Chef', 'foodLogistics', 'chef'),
                                             const Text("or"),
-                                            _buildChoiceButton(context, 'Dishwasher', 'foodLogistics', 'outdoor'),
+                                            _buildChoiceButton(context, 'Dishwasher', 'foodLogistics', 'Dishwasher'),
                                           ],
                                         ),
                                         SizedBox(height: 16),

@@ -16,8 +16,15 @@ class FourthPage extends StatefulWidget {
 class _FourthPageState extends State<FourthPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   List<HouseholdModel> _households = [];
-  bool _showJoinButton = true; // boolean to control visibility of Join button
-
+  bool _showJoinButton = true; // boolean to control visibility of Join butto
+  String selectedTidy = 'Cleaner';
+  String selectedTimeOfDay = 'Early Riser';
+  String selectedButton = "";
+  bool isFirstButtonGreen = false;
+  bool isSecondButtonGreen = false;
+  final ValueNotifier<bool> isFirstButtonGreenVN = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isSecondButtonGreenVN = ValueNotifier<bool>(false);
+  bool isPressed = false;
   @override
   void initState() {
     super.initState();
@@ -116,15 +123,27 @@ class _FourthPageState extends State<FourthPage> {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text('Make Your Choices'),
+                                    title: Text('Select 1 From Each Row:'),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildChoiceButton(context, 'Cleaner','tidy', 'cleaner'),
+                                        const Text("or"),
+                                        _buildChoiceButton(context, 'Organizer', 'tidy', 'organizer'),
+                                          ],
+                                        ),
+                                        
+                                        SizedBox(height: 16),
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
                                           children: [
-                                            _buildChoiceButton(context, 'Cleaner', 'tidy', 'cleaner'),
-                                            _buildChoiceButton(context, 'Organizer', 'tidy', 'organizer'),
+                                            _buildChoiceButton(context, 'Early Riser', 'timeOfDay', 'earlyRiser'),
+                                            const Text("or"),
+                                            _buildChoiceButton(context, 'Night Owl', 'timeOfDay', 'nightOwl'),
                                           ],
                                         ),
                                         SizedBox(height: 16),
@@ -132,16 +151,22 @@ class _FourthPageState extends State<FourthPage> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceEvenly,
                                           children: [
-                                            _buildChoiceButton(context, 'Early Riser', 'timeOfDay', 'earlyRiser'),
-                                            _buildChoiceButton(context, 'Night Owl', 'timeOfDay', 'nightOwl'),
+                                            _buildChoiceButton(context, 'Chef', 'foodLogistics', 'chef'),
+                                            const Text("or"),
+                                            _buildChoiceButton(context, 'Dishwasher', 'foodLogistics', 'outdoor'),
                                           ],
                                         ),
                                         SizedBox(height: 16),
-                                        // _buildChoiceButton(context, 'Cleaner'),
-                                        // _buildChoiceButton(context, 'Organizer'),
-                                        // _buildChoiceButton(context, 'Early Riser'),
-                                        // _buildChoiceButton(context, 'Night Owl'),
-                                        // SizedBox(height: 16),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            _buildChoiceButton(context,'Outdoor','location', 'outdoor'),
+                                            const Text("or"),
+                                            _buildChoiceButton(context, 'Indoor', 'location', 'indoor'),
+                                          ],
+                                        ),
+                                        SizedBox(height: 16),
                                         ElevatedButton(
                                           onPressed: () {
                                             Navigator.of(context).pop();
@@ -236,42 +261,73 @@ class _FourthPageState extends State<FourthPage> {
       ),
     );
   }
-}
 
-// displays current user data
-Future<UserModel> _readData() async {
-  final db = FirebaseFirestore.instance;
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final User? user = auth.currentUser;
+  // displays current user data
+  Future<UserModel> _readData() async {
+    final db = FirebaseFirestore.instance;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final User? user = auth.currentUser;
 
-  String? currEmail = user!.email;
+    String? currEmail = user!.email;
 
-  final snapshot =
-      await db.collection("users").where("email", isEqualTo: currEmail).get();
+    final snapshot =
+        await db.collection("users").where("email", isEqualTo: currEmail).get();
 
-  final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
+    final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
 
-  return userData;
-}
+    return userData;
+  }
 
-Widget _buildChoiceButton(BuildContext context, String choice, String category, String value) {
-  return ElevatedButton(
-    onPressed: () {
-      _submitChoice(category, value);
-    },
-    child: Text(choice),
-  );
-}
+  MaterialStateProperty<Color> getColor(Color c1, Color c2){
+    final getColor = (Set<MaterialState> states) {
+      if (states.contains(MaterialState.pressed)) {
+        return c2;
+      }
+      else {
+        return c1;
+      }
+    };
+    return MaterialStateProperty.resolveWith(getColor);
+  }
+
+  MaterialStateProperty<BorderSide> getBorder(Color c1, Color c2) {
+    final getBorder = (Set<MaterialState> states) {
+      if (states.contains(MaterialState.pressed)) {
+        return BorderSide(color: c2, width: 2);
+      } else {
+        return BorderSide(color: c1, width: 2);
+      }
+    };
+    return MaterialStateProperty.resolveWith(getBorder);
+  }
+
+  Widget _buildChoiceButton(BuildContext context, String label, String category, String value) {
+    return ElevatedButton(
+      onPressed: () {
+        
+        setState(() {
+          selectedButton = value; // Update selected button
+          _submitChoice(category, value);
+        });
+      },
+      style: ButtonStyle(
+        foregroundColor: getColor(Colors.blue, Colors.white),
+        backgroundColor: getColor(Colors.white, Colors.green),
+        side: getBorder(Colors.white, Colors.black54), // Change button color based on selection
+      ),
+      child: Text(label),
+    );
+  }
 
   void _submitChoice(String category, String value) {
     FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').get().then((DocumentSnapshot snapshot) {
       Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-      Map<String, String> preferences = data['preferences'] != null ? Map<String, String>.from(data['preferences']) : {};
+      Map<String, String> chore_preferences = data['chore-preferences'] != null ? Map<String, String>.from(data['chore-preferences']) : {};
 
-      preferences[category] = value;
+      chore_preferences[category] = value;
 
       FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').set({
-        'preferences': preferences,
+        'chore-preferences': chore_preferences,
       }, SetOptions(merge: true)).then((_) {
         print('Preferences updated successfully!');
       }).catchError((error) {
@@ -281,6 +337,7 @@ Widget _buildChoiceButton(BuildContext context, String choice, String category, 
       print('Error getting document: $error');
     });
   }
+}
 
 class HouseholdModel {
   final String name;

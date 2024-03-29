@@ -27,9 +27,22 @@ class _FourthPageState extends State<FourthPage> {
     _fetchHouseholdsForCurrentUser();
   }
 
+Future<void> updateUserHousehold(String? userId, String householdName) async {
+  try {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .update({'currHouse': householdName});
+  } catch (e) {
+    print('Error updating user household: $e');
+    // Handle error here, such as showing a snackbar or retrying the update
+  }
+}
+
   Future<void> _fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
     if (currentUser != null) {
+      UserModel currUserModel = await _readData() as UserModel;
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('households')
           .where('roommates', arrayContains: currentUser.email)
@@ -37,9 +50,11 @@ class _FourthPageState extends State<FourthPage> {
       setState(() {
         if (snapshot.docs.isNotEmpty){
           _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
+          updateUserHousehold( currUserModel.id, _household!.name);
           _showJoinButton = false;
         } else {
           _household = null;
+          updateUserHousehold( currUserModel.id, "");
           _showJoinButton = true;
         }
       });

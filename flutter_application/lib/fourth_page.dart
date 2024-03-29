@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'SignInPage.dart';
 import 'household_create.dart';
 import 'household_join.dart';
+import 'user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
 // TODO: household auto-deletes when no members are in? 
+// TODO: appliances are subcollection now
 
 class FourthPage extends StatefulWidget {
   @override
@@ -17,7 +18,7 @@ class FourthPage extends StatefulWidget {
 class _FourthPageState extends State<FourthPage> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<HouseholdModel> _households = [];
+  HouseholdModel? _household; // Change _households to a singular object
   bool _showJoinButton = true; // boolean to control visibility of Join button
 
   @override
@@ -34,8 +35,13 @@ class _FourthPageState extends State<FourthPage> {
           .where('roommates', arrayContains: currentUser.email)
           .get();
       setState(() {
-        _households = snapshot.docs.map((doc) => HouseholdModel.fromSnapshot(doc)).toList();
-        _showJoinButton = _households.isEmpty;
+        if (snapshot.docs.isNotEmpty){
+          _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
+          _showJoinButton = false;
+        } else {
+          _household = null;
+          _showJoinButton = true;
+        }
       });
     }
   }
@@ -54,16 +60,6 @@ void removeFromHousehold(String houseName) {
           existingRoommates.remove(_currentUser.email);
           document.reference.update({'roommates': existingRoommates}).then((_) {
             setState(() {
-              // _households = _households.map((household) {
-              //   if (household.name == houseName) {
-              //     return HouseholdModel(
-              //       name: household.name,
-              //       max_roommate_count: household.max_roommate_count,
-              //       roommates: existingRoommates.cast<String>(),
-              //     );
-              //   }
-              //   return household;
-              // }).toList();
               _fetchHouseholdsForCurrentUser();
             });
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -111,35 +107,27 @@ void removeFromHousehold(String houseName) {
                           SizedBox(height: 20),
                           Text('User Household:'),
                           SizedBox(height: 10,),
-                          ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _households.length,
-                              itemBuilder: (context, index){
-                                return ListTile(
-                                  title: Text(_households[index].name),
+                          if (_household != null)
+                                ListTile(
+                                  title: Text(_household!.name),
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: _households[index].roommates.map((email) => Text(email)).toList(),
+                                    children: _household!.roommates.map((email) => Text(email)).toList(),
                                   ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text("Number of Household Members: ${_households[index].roommates.length}"),
+                                      Text("Number of Household Members: ${_household!.roommates.length}"),
                                       SizedBox(width: 10),
                                       IconButton(
                                         onPressed: () {
-                                          removeFromHousehold(_households[index].name);
+                                          removeFromHousehold(_household!.name);
                                         } , 
                                         icon: Icon(Icons.delete),
                                       )
-
-                                    ],
+                                      ],
                                     )
-                                    
-                                );
-                              }
-                            )
-                          
+                                )                        
                         ],
                       );
                     }

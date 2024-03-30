@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
-  runApp(Chores());
-}
+// void main() {
+//   runApp(Chores());
+// }
 
-class Chores extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: ToDoList(),
-    );
-  }
-}
+// class Chores extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: ToDoList(),
+//     );
+//   }
+// }
+
+
+// class ToDoList extends StatefulWidget {
+//   @override
+//   _ToDoListState createState() => _ToDoListState();
+// }
 
 class ToDoList extends StatefulWidget {
+  const ToDoList({Key? key}) : super(key: key);
+
   @override
   _ToDoListState createState() => _ToDoListState();
 }
@@ -83,75 +91,80 @@ class _ToDoListState extends State<ToDoList> {
       appBar: AppBar(
         title: const Text('To-Do List'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: choresCollection.snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
+      body: Container(
+        padding: EdgeInsets.all(8),
+        color: Colors.purple[100],
+        
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: choresCollection.snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
 
-                var chores = snapshot.data!.docs;
-                List<Widget> choreWidgets = [];
+                  var chores = snapshot.data!.docs;
+                  List<Widget> choreWidgets = [];
 
-                for (var c in chores) {
-                  var choreData = c.data() as Map<String, dynamic>;
-                  var choreId = c.id;
-                  var choreName = choreData['choreName'];
-                  var assignee = choreData['assignee'];
-                  var isCompleted = choreData['isCompleted'];
-                  var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
+                  for (var c in chores) {
+                    var choreData = c.data() as Map<String, dynamic>;
+                    var choreId = c.id;
+                    var choreName = choreData['choreName'];
+                    var assignee = choreData['assignee'];
+                    var isCompleted = choreData['isCompleted'];
+                    var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
 
-                  var choreWidget = ListTile(
-                      leading: Checkbox(
-                      value: isCompleted,
-                      onChanged: (value) {
-                        choresCollection.doc(choreId).update({'isCompleted': value});
-                      },
-                    ),
-                    title: Text('Task: $choreName',
-                      style: TextStyle(
-                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    var choreWidget = ListTile(
+                        leading: Checkbox(
+                        value: isCompleted,
+                        onChanged: (value) {
+                          choresCollection.doc(choreId).update({'isCompleted': value});
+                        },
                       ),
+                      title: Text('Task: $choreName',
+                        style: TextStyle(
+                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        ),
+                        ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Assignee: $assignee'),
+                          if (deadline != null)
+                            Text('Deadline: $deadline'),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              _deleteChore(choreId);
+                            },
+                          )
+                        ],
                       ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Assignee: $assignee'),
-                        if (deadline != null)
-                          Text('Deadline: $deadline'),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {
-                            _deleteChore(choreId);
-                          },
-                        )
-                      ],
-                    ),
-                  );
-                  choreWidgets.add(choreWidget);
-                }
+                    );
+                    choreWidgets.add(choreWidget);
+                  }
 
-                return ListView(
-                  children: choreWidgets,
-                );
-              },
+                  return ListView(
+                    children: choreWidgets,
+                  );
+                },
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                _showAddTaskDialog(context);
-              },
-              child: const Text('Add Task'),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  _showAddTaskDialog(context);
+                },
+                child: const Text('Add Task'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

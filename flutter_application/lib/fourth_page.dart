@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'household_create.dart';
 import 'household_join.dart';
+import 'preferences_page.dart';
 import 'user_model.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,6 +31,7 @@ class _FourthPageState extends State<FourthPage> {
   final ValueNotifier<bool> isFirstButtonGreenVN = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isSecondButtonGreenVN = ValueNotifier<bool>(false);
   bool isPressed = false;
+  double _prefValue = 0.0;
   @override
   void initState() {
     super.initState();
@@ -175,49 +177,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text('Select 1 From Each Row:'),
+                                    title: Text('Adjust each scale:'),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _buildChoiceButton(context, 'Cleaner','tidy', 'cleaner'),
-                                        const Text("or"),
-                                        _buildChoiceButton(context, 'Organizer', 'tidy', 'organizer'),
-                                          ],
-                                        ),
-                                        
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context, 'Early Riser', 'timeOfDay', 'earlyRiser'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Night Owl', 'timeOfDay', 'nightOwl'),
-                                          ],
-                                        ),
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context, 'Chef', 'foodLogistics', 'chef'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Dishwasher', 'foodLogistics', 'Dishwasher'),
-                                          ],
-                                        ),
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context,'Outdoor','location', 'outdoor'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Indoor', 'location', 'indoor'),
-                                          ],
-                                        ),
+                                        PreferenceSlider(),
                                         SizedBox(height: 16),
                                         ElevatedButton(
                                           onPressed: () {
@@ -302,67 +266,3 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
       ),
     );
   }
-
-
-
-  MaterialStateProperty<Color> getColor(Color c1, Color c2){
-    final getColor = (Set<MaterialState> states) {
-      if (states.contains(MaterialState.pressed)) {
-        return c2;
-      }
-      else {
-        return c1;
-      }
-    };
-    return MaterialStateProperty.resolveWith(getColor);
-  }
-
-  MaterialStateProperty<BorderSide> getBorder(Color c1, Color c2) {
-    final getBorder = (Set<MaterialState> states) {
-      if (states.contains(MaterialState.pressed)) {
-        return BorderSide(color: c2, width: 2);
-      } else {
-        return BorderSide(color: c1, width: 2);
-      }
-    };
-    return MaterialStateProperty.resolveWith(getBorder);
-  }
-
-  Widget _buildChoiceButton(BuildContext context, String label, String category, String value) {
-    return ElevatedButton(
-      onPressed: () {
-        
-        setState(() {
-          selectedButton = value; // Update selected button
-          _submitChoice(category, value);
-        });
-      },
-      style: ButtonStyle(
-        foregroundColor: getColor(Colors.blue, Colors.white),
-        backgroundColor: getColor(Colors.white, Colors.green),
-        side: getBorder(Colors.white, Colors.black54), // Change button color based on selection
-      ),
-      child: Text(label),
-    );
-  }
-
-  void _submitChoice(String category, String value) {
-    FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').get().then((DocumentSnapshot snapshot) {
-      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-      Map<String, String> chore_preferences = data['chore-preferences'] != null ? Map<String, String>.from(data['chore-preferences']) : {};
-
-      chore_preferences[category] = value;
-
-      FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').set({
-        'chore-preferences': chore_preferences,
-      }, SetOptions(merge: true)).then((_) {
-        print('Preferences updated successfully!');
-      }).catchError((error) {
-        print('Failed to update preferences: $error');
-      });
-    }).catchError((error) {
-      print('Error getting document: $error');
-    });
-  }
-}
-

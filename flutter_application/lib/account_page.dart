@@ -12,12 +12,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 // TODO: add a password for joining the house
 // TODO: create a back home button
 
-class FourthPage extends StatefulWidget {
+class AccountPage extends StatefulWidget {
   @override
-  _FourthPageState createState() => _FourthPageState();
+  _AccountPageState createState() => _AccountPageState();
 }
 
-class _FourthPageState extends State<FourthPage> {
+class _AccountPageState extends State<AccountPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   HouseholdModel? _household;
   bool _showJoinButton = true; // boolean to control visibility of Join butto

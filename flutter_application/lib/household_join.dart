@@ -154,7 +154,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
 
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => FourthPage()),
+                MaterialPageRoute(builder: (context) => AccountPage()),
               );
 
             }).catchError((error) {

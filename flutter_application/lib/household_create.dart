@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application/household_model.dart';
 import 'SignInPage.dart';
 import 'fourth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -100,24 +101,35 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
   void _saveHouseholdToFirebase( String name, int count ) async{
 
     try{
+
+      if( (await doesHouseholdExist(name)) == false ) {
+        DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
+
+        await householdRef.set(
+          {
+          'name': name,
+          'max_roommate_count': count,
+          'roommates': [_currentUser.email],
+          }
+        ).then((_) {
+          _nameController.clear();
+          _countController.clear();      
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Object submitted successfully'),
+          ));
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => FourthPage()),
+          );
+        });
+
+      } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Household name already exists. Please enter unique household name.'),
+          ));
+      }
       // create reference to household
-      DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
-
-      await householdRef.set(
-        {
-        'name': name,
-        'max_roommate_count': count,
-        'roommates': [_currentUser.email],
-        }
-      ).then((_) {
-        _nameController.clear();
-        _countController.clear();      
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Object submitted successfully'),
-        ));
-      });
-
-      // create appliances subcollection
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Failed to submit object: $error'),

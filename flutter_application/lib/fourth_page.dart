@@ -1,3 +1,5 @@
+import 'dart:js_interop_unsafe';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'household_create.dart';
@@ -8,8 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
 // TODO: household auto-deletes when no members are in? 
-// TODO: appliances are subcollection now
-// NOTE: user updates could be a lot easier if we used emails as keys
+// TODO: no households can have the same name
+// TODO: create a back home button
 
 class FourthPage extends StatefulWidget {
   @override
@@ -49,16 +51,6 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     print(' not added ');
   }
 
-  // try {
-  //   await FirebaseFirestore.instance
-  //       .collection('users')
-  //       .where('email', isEqualTo: userId)
-  //       .get()
-  //       .update({'currHouse': householdName});
-  // } catch (e) {
-  //   print('Error updating user household: $e');
-  //   // Handle error here, such as showing a snackbar or retrying the update
-  // }
 }
 
   Future<void> _fetchHouseholdsForCurrentUser() async {
@@ -89,23 +81,58 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
         .collection('households')
         .where('name', isEqualTo: houseName)
         .get()
-        .then((querySnapshot) {
+        .then((querySnapshot) async {
       if (querySnapshot.docs.isNotEmpty) {
         var document = querySnapshot.docs.first;
         List<dynamic> existingRoommates =
             List.from(document.data()['roommates']);
         if (existingRoommates.contains(_currentUser!.email)) {
           existingRoommates.remove(_currentUser.email);
-          document.reference.update({'roommates': existingRoommates}).then((_) {
-            setState(() {
-              _fetchHouseholdsForCurrentUser();
+
+          if(existingRoommates.isEmpty) {
+
+            // delete household if no more roommates exist
+            DocumentReference currHouseRef = FirebaseFirestore.instance.collection('households').doc(houseName);
+
+            // TODO: deleting subcollections is hardcoded, put this in it's own function
+            QuerySnapshot appliancesSnapshot = await currHouseRef.collection('appliances').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in appliancesSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            QuerySnapshot choresSnapshot = await currHouseRef.collection('chores').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in choresSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            await currHouseRef.delete().then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household. It has been deleted.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
             });
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('You have left the household.'),
-            ));
-          }).catchError((error) {
-            print('Failed to update roommates list: $error');
-          });
+
+          } else {
+
+            // if there are still roommates left, just delete current user
+            document.reference.update({'roommates': existingRoommates}).then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
+            });
+
+          }         
         }
       } else {
         print('Household not found.');

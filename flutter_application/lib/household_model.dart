@@ -17,3 +17,20 @@ class HouseholdModel{
     );
   }
 }
+
+Future<bool> doesHouseholdExist(String householdId) async {
+  try {
+    // Create a reference to the document with the given householdId
+    DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(householdId);
+
+    // Get the document snapshot
+    DocumentSnapshot snapshot = await householdRef.get();
+
+    // Check if the document exists
+    return snapshot.exists;
+  } catch (error) {
+    // Handle any errors that occur during the process
+    print('Error checking household existence: $error');
+    return false; // Return false if an error occurs
+  }
+}

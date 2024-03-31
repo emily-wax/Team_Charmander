@@ -266,3 +266,4 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
       ),
     );
   }
+}

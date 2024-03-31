@@ -5,12 +5,11 @@ import 'package:flutter/material.dart';
 import 'household_create.dart';
 import 'household_join.dart';
 import 'user_model.dart';
+import 'HomePage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
-// TODO: household auto-deletes when no members are in? 
-// TODO: no households can have the same name
 // TODO: create a back home button
 
 class FourthPage extends StatefulWidget {
@@ -297,7 +296,17 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                     style: TextStyle(fontSize: 20),
                   ),
                 ),
-              )
+              ),
+              SizedBox(height: 20),
+              IconButton(
+                onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                }, 
+                icon: Icon(Icons.home)
+                )
             ])),
       ),
     );

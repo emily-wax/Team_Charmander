@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
+import 'user_model.dart';
 
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);
@@ -11,6 +11,7 @@ class AppliancesPage extends StatefulWidget {
 
 class _AppliancesPageState extends State<AppliancesPage> {
   final TextEditingController _applianceNameController = TextEditingController();
+  UserModel? currUserModel;
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +19,36 @@ class _AppliancesPageState extends State<AppliancesPage> {
       appBar: AppBar(
         title: Text('Appliances'),
       ),
-      body: Container(
+      body: FutureBuilder<UserModel>(
+        future: readData(), // Use getCurrentUser() as the future
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          } else {
+            currUserModel = snapshot.data; // Set currUserModel once future completes
+            return buildAppliancesPage(); // Build the main content of the page
+          }
+        },
+    ),
+    );
+  }
+
+  Widget buildAppliancesPage() {
+
+      return Container(
         padding: EdgeInsets.all(8),
         color: Colors.lightBlue[100],
         child: Column(
           children: [
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance.collection('appliances').snapshots(),
+                stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(
@@ -70,7 +93,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center, // Aligns the buttons horizontally to the center
                               children: [
-                                isClaimed && appliance['claimedBy'] != FirebaseAuth.instance.currentUser?.uid
+                                isClaimed && appliance['claimedBy'] != currUserModel!.email
                                     ? SizedBox()
                                     : ElevatedButton(
                                         onPressed: () {
@@ -100,8 +123,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
             _buildAddApplianceButton(),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildAddApplianceButton() {
@@ -188,7 +210,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
 
   void _claimAppliance(String applianceId) async {
     // Get the current user's ID
-    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    String? userId = currUserModel!.email;
 
     // If userId is null, handle the case where the user is not signed in
     if (userId == null) {
@@ -198,7 +220,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
     }
 
     // Get the appliance document from Firestore
-    DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('appliances').doc(applianceId).get();
+    DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).get();
 
     // Get the current claim status and claimed by user ID
     bool isClaimed = applianceSnapshot['claimed'];
@@ -212,7 +234,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
     }
 
     // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
-    await FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
+    await FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
       'claimed': true,
       'claimedBy': userId, // Use the current user's ID
       'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
@@ -221,16 +243,18 @@ class _AppliancesPageState extends State<AppliancesPage> {
 
   void _unclaimAppliance(String applianceId) {
     // Clear the claimedBy field when unclaim
-    FirebaseFirestore.instance.collection('appliances').doc(applianceId).update({
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Clear claimedAt
     });
   }
 
-  void _addAppliance(String applianceName) {
+  // TODO: make sure user is in a household
+  void _addAppliance(String applianceName) async {
     // Add a new appliance to Firestore
-    FirebaseFirestore.instance.collection('appliances').doc(applianceName).set({
+
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceName).set({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Initialize claimedAt as null
@@ -270,9 +294,10 @@ class _AppliancesPageState extends State<AppliancesPage> {
     );
   }
 
+  // TODO: change reference to subcollection
   void _deleteAppliance(String applianceId) {
     // Delete the appliance document from Firestore
-    FirebaseFirestore.instance.collection('appliances').doc(applianceId).delete().then((_) {
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).delete().then((_) {
       print('Appliance deleted successfully');
     }).catchError((error) {
       // Handle any errors that occur during deleting the appliance

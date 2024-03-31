@@ -1,13 +1,18 @@
+import 'dart:js_interop_unsafe';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'SignInPage.dart';
 import 'household_create.dart';
 import 'household_join.dart';
 import 'preferences_page.dart';
+import 'user_model.dart';
+import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
-// TODO: household auto-deletes when no members are in?
+// TODO: household auto-deletes when no members are in? 
+// TODO: no households can have the same name
+// TODO: create a back home button
 
 class FourthPage extends StatefulWidget {
   @override
@@ -16,7 +21,7 @@ class FourthPage extends StatefulWidget {
 
 class _FourthPageState extends State<FourthPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<HouseholdModel> _households = [];
+  HouseholdModel? _household;
   bool _showJoinButton = true; // boolean to control visibility of Join butto
   String selectedTidy = 'Cleaner';
   String selectedTimeOfDay = 'Early Riser';
@@ -33,6 +38,23 @@ class _FourthPageState extends State<FourthPage> {
     _fetchHouseholdsForCurrentUser();
   }
 
+Future<void> updateUserHousehold(String? userId, String householdName) async {
+
+  QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: userId).get();
+  List<QueryDocumentSnapshot> documents = querySnapshot.docs;
+
+  if(documents.isNotEmpty) {
+    QueryDocumentSnapshot document = documents.first;
+
+    DocumentReference documentReference = document.reference;
+
+    await documentReference.set({'currHouse': householdName}, SetOptions(merge: true));
+  } else {
+    print(' not added ');
+  }
+
+}
+
   Future<void> _fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
     if (currentUser != null) {
@@ -41,10 +63,15 @@ class _FourthPageState extends State<FourthPage> {
           .where('roommates', arrayContains: currentUser.email)
           .get();
       setState(() {
-        _households = snapshot.docs
-            .map((doc) => HouseholdModel.fromSnapshot(doc))
-            .toList();
-        _showJoinButton = _households.isEmpty;
+        if (snapshot.docs.isNotEmpty){
+          _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
+          updateUserHousehold( currentUser.email, _household!.name);
+          _showJoinButton = false;
+        } else {
+          _household = null;
+          updateUserHousehold( currentUser.email, "");
+          _showJoinButton = true;
+        }
       });
     }
   }
@@ -56,33 +83,58 @@ class _FourthPageState extends State<FourthPage> {
         .collection('households')
         .where('name', isEqualTo: houseName)
         .get()
-        .then((querySnapshot) {
+        .then((querySnapshot) async {
       if (querySnapshot.docs.isNotEmpty) {
         var document = querySnapshot.docs.first;
         List<dynamic> existingRoommates =
             List.from(document.data()['roommates']);
         if (existingRoommates.contains(_currentUser!.email)) {
           existingRoommates.remove(_currentUser.email);
-          document.reference.update({'roommates': existingRoommates}).then((_) {
-            setState(() {
-              // _households = _households.map((household) {
-              //   if (household.name == houseName) {
-              //     return HouseholdModel(
-              //       name: household.name,
-              //       max_roommate_count: household.max_roommate_count,
-              //       roommates: existingRoommates.cast<String>(),
-              //     );
-              //   }
-              //   return household;
-              // }).toList();
-              _fetchHouseholdsForCurrentUser();
+
+          if(existingRoommates.isEmpty) {
+
+            // delete household if no more roommates exist
+            DocumentReference currHouseRef = FirebaseFirestore.instance.collection('households').doc(houseName);
+
+            // TODO: deleting subcollections is hardcoded, put this in it's own function
+            QuerySnapshot appliancesSnapshot = await currHouseRef.collection('appliances').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in appliancesSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            QuerySnapshot choresSnapshot = await currHouseRef.collection('chores').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in choresSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            await currHouseRef.delete().then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household. It has been deleted.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
             });
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('You have left the household.'),
-            ));
-          }).catchError((error) {
-            print('Failed to update roommates list: $error');
-          });
+
+          } else {
+
+            // if there are still roommates left, just delete current user
+            document.reference.update({'roommates': existingRoommates}).then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
+            });
+
+          }         
         }
       } else {
         print('Household not found.');
@@ -105,10 +157,10 @@ class _FourthPageState extends State<FourthPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
               FutureBuilder(
-                future: _readData(),
-                builder: ((context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasData) {
+                future: readData(),
+                builder:( (context, snapshot) {
+                  if( snapshot.connectionState == ConnectionState.done){
+                    if(snapshot.hasData){
                       UserModel? user = snapshot.data as UserModel;
 
                       // TODO: find a better way to display user data ...
@@ -147,39 +199,28 @@ class _FourthPageState extends State<FourthPage> {
                           ),
 
                           Text('User Household:'),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _households.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                    title: Text(_households[index].name),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: _households[index]
-                                          .roommates
-                                          .map((email) => Text(email))
-                                          .toList(),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                            "Number of Household Members: ${_households[index].roommates.length}"),
-                                        SizedBox(width: 10),
-                                        IconButton(
-                                          onPressed: () {
-                                            removeFromHousehold(
-                                                _households[index].name);
-                                          },
-                                          icon: Icon(Icons.delete),
-                                        )
+                          SizedBox(height: 10,),
+                          if (_household != null)
+                                ListTile(
+                                  title: Text(_household!.name),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: _household!.roommates.map((email) => Text(email)).toList(),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("Number of Household Members: ${_household!.roommates.length}"),
+                                      SizedBox(width: 10),
+                                      IconButton(
+                                        onPressed: () {
+                                          removeFromHousehold(_household!.name);
+                                        } , 
+                                        icon: Icon(Icons.delete),
+                                      )
                                       ],
-                                    ));
-                              })
+                                    )
+                                )                        
                         ],
                       );
                     }
@@ -225,42 +266,3 @@ class _FourthPageState extends State<FourthPage> {
       ),
     );
   }
-
-  // displays current user data
-  Future<UserModel> _readData() async {
-    final db = FirebaseFirestore.instance;
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final User? user = auth.currentUser;
-
-    String? currEmail = user!.email;
-
-    final snapshot =
-        await db.collection("users").where("email", isEqualTo: currEmail).get();
-
-    final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
-
-    return userData;
-  }
-}
-
-class HouseholdModel {
-  final String name;
-  final int max_roommate_count;
-  final List<String> roommates;
-
-  HouseholdModel(
-      {required this.name,
-      required this.max_roommate_count,
-      required this.roommates});
-
-  factory HouseholdModel.fromSnapshot(DocumentSnapshot snapshot) {
-    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-    List<dynamic> roommates =
-        data['roommates'] != null ? List.from(data['roommates']) : [];
-    return HouseholdModel(
-      name: data['name'],
-      max_roommate_count: data['max_roommate_count'],
-      roommates: roommates.cast<String>(),
-    );
-  }
-}

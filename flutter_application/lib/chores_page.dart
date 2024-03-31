@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'user_model.dart';
+import 'household_model.dart';
 
 void main() {
   runApp(Chores());
@@ -23,7 +26,9 @@ class _ToDoListState extends State<ToDoList> {
   TextEditingController taskController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
-  CollectionReference choresCollection = FirebaseFirestore.instance.collection('tasks-temp');
+  UserModel? currUserModel;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // CollectionReference choresCollection = FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores');
 
   // add chore to firestore given an assignee who was manually typed
   // I'm commenting this out because more options isn't always better - manual assignees could lead to weird edge cases in other parts of the app
@@ -39,7 +44,7 @@ class _ToDoListState extends State<ToDoList> {
 
   // add chore to firestore given an assignee that was selected from a dropdown
   void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
-    choresCollection.add({
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
       'choreName': choreName,
       'assignee': assignee,
       'isCompleted': false,
@@ -48,7 +53,7 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _deleteChore(String choreId) {
-    choresCollection.doc(choreId).delete();
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
   }
 
   @override
@@ -58,13 +63,21 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   Future<void> _loadRoommates() async {
+    User? currentUser = _auth.currentUser;
+    HouseholdModel currHouse;
+      
      try {
       QuerySnapshot querySnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+          await FirebaseFirestore.instance.collection('households')
+          .where('roommates', arrayContains: currentUser!.email)
+          .get();
       setState(() {
-        _users = querySnapshot.docs
-            .map((doc) => (doc.data() as Map<String, dynamic>)['email'] as String)
-            .toList();
+        if(querySnapshot.docs.isNotEmpty){
+          currHouse = HouseholdModel.fromSnapshot(querySnapshot.docs.first);
+          _users = currHouse.roommates;
+        } else {
+          print('error loading roommates');
+        }
       });
     } catch (e) {
       print("Error loading users: $e");
@@ -76,6 +89,8 @@ class _ToDoListState extends State<ToDoList> {
   DateTime? selectedDate;
   String? selectedUser;
   List<String> _users = []; // List to store available users
+  
+
 
   @override
   Widget build(BuildContext context) {
@@ -83,11 +98,32 @@ class _ToDoListState extends State<ToDoList> {
       appBar: AppBar(
         title: const Text('To-Do List'),
       ),
-      body: Column(
+      body: FutureBuilder<UserModel>(
+        future: readData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
+          } else {
+            currUserModel = snapshot.data; // Set currUserModel once future completes
+            return buildChoresPage(); // Build the main content of the page
+          }
+        },
+      ), 
+    );
+  }
+
+  Widget buildChoresPage() {
+    return Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: choresCollection.snapshots(),
+              stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(
@@ -110,7 +146,7 @@ class _ToDoListState extends State<ToDoList> {
                       leading: Checkbox(
                       value: isCompleted,
                       onChanged: (value) {
-                        choresCollection.doc(choreId).update({'isCompleted': value});
+                        FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
                       },
                     ),
                     title: Text('Task: $choreName',
@@ -152,8 +188,7 @@ class _ToDoListState extends State<ToDoList> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   void _showAddTaskDialog(BuildContext context) {

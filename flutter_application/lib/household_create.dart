@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_application/household_model.dart';
 import 'SignInPage.dart';
-import 'fourth_page.dart';
+import 'account_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -31,6 +32,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _countController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
   late User _currentUser;
 
   @override
@@ -77,6 +79,20 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                   return null;
                 },
               ),
+              TextFormField(
+                controller: _passwordController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  helperText: 'This is used to control who can join your household',
+                ),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Please enter a password for your household';
+                  }
+                  return null;
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
@@ -85,7 +101,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                       // Process the data
                       String name = _nameController.text;
                       int count = int.parse(_countController.text);
-                      _saveHouseholdToFirebase(name, count);
+                      _saveHouseholdToFirebase(name, count, _passwordController.text );
                     }
                   },
                   child: Text('Submit'),
@@ -98,7 +114,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     );
   }
 
-  void _saveHouseholdToFirebase( String name, int count ) async{
+  void _saveHouseholdToFirebase( String name, int count, String password ) async{
 
     try{
 
@@ -108,12 +124,14 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
         await householdRef.set(
           {
           'name': name,
+          'password': password,
           'max_roommate_count': count,
           'roommates': [_currentUser.email],
           }
         ).then((_) {
           _nameController.clear();
           _countController.clear();      
+          _passwordController.clear();
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Object submitted successfully'),
           ));
@@ -141,6 +159,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
   void dispose() {
     _nameController.dispose();
     _countController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

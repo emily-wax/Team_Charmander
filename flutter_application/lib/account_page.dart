@@ -130,7 +130,6 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             }).catchError((error) {
               print('Failed to update roommates list: $error');
             });
-
           }         
         }
       } else {

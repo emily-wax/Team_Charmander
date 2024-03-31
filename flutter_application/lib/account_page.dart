@@ -145,6 +145,17 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          )
+        ],
       ),
       body: Container(
         color: Colors.orange, // Set the background color to orange
@@ -296,16 +307,6 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   ),
                 ),
               ),
-              SizedBox(height: 20),
-              IconButton(
-                onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
-                }, 
-                icon: Icon(Icons.home)
-                )
             ])),
       ),
     );

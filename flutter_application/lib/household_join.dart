@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application/household_model.dart';
 import 'SignInPage.dart';
-import 'fourth_page.dart';
+import 'account_page.dart';
+import 'HomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -28,7 +30,7 @@ class HouseholdJoinForm extends StatefulWidget {
 class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
 
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _nameController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
   late User _currentUser;
   List<String> _households = []; // List to store available users
   String? selectedHousehold;
@@ -60,6 +62,29 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Household Join Form'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          ),
+          Tooltip(
+            message: 'Account Page',
+            child: IconButton(
+              icon: const Icon(Icons.account_circle_sharp),
+              onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AccountPage()),
+                  );
+              },
+            ),
+          )
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -83,15 +108,28 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
                 }).toList(),
                 hint: Text('Select Household'),
               ),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Household Password',
+                ),
+                validator: (value) {
+                  if(value!.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       // Process the data
+                      
+
                       String? name = selectedHousehold;
-                  
-                      addToObjectArray(name!);
+                      addToObjectArray(name!, _passwordController.text);
                     }
                   },
                   child: Text('Submit'),
@@ -104,7 +142,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
     );
   }
 
-  void addToObjectArray( String houseName ){
+  void addToObjectArray( String houseName, String password ){
 
     FirebaseFirestore.instance.collection('households')
       .where('name', isEqualTo: houseName)
@@ -117,12 +155,21 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
           List<dynamic> existingArray = document.data()['roommates'] ?? [];
           // Add the string to the array
 
+          HouseholdModel house = HouseholdModel.fromSnapshot(document);
           // TODO: check if the max roommate count has already been hit
 
-          if(existingArray.contains( _currentUser.email)){
+          if (existingArray.contains( _currentUser.email)){
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('You are already in this household.'),
             ));            
+          } else if (house.password != password) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Incorrect Password.'),
+            ));    
+          } else if ( existingArray.length >= house.max_roommate_count ){
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('This house has already hit the maximum amount of roommates.'),
+            ));   
           } else {
             existingArray.add(_currentUser.email);
             // Update the document with the modified array
@@ -135,7 +182,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
 
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => FourthPage()),
+                MaterialPageRoute(builder: (context) => AccountPage()),
               );
 
             }).catchError((error) {
@@ -150,9 +197,13 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
       });
   }
 
+  // bool _HouseholdPasswordCheck( String houseName, String password ) {
+
+  // }
+
   @override
   void dispose() {
-    _nameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

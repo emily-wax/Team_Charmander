@@ -6,20 +6,19 @@ import 'household_create.dart';
 import 'household_join.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
+import 'HomePage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
-// TODO: household auto-deletes when no members are in? 
-// TODO: no households can have the same name
 // TODO: create a back home button
 
-class FourthPage extends StatefulWidget {
+class AccountPage extends StatefulWidget {
   @override
-  _FourthPageState createState() => _FourthPageState();
+  _AccountPageState createState() => _AccountPageState();
 }
 
-class _FourthPageState extends State<FourthPage> {
+class _AccountPageState extends State<AccountPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   HouseholdModel? _household;
   bool _showJoinButton = true; // boolean to control visibility of Join butto
@@ -133,7 +132,6 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             }).catchError((error) {
               print('Failed to update roommates list: $error');
             });
-
           }         
         }
       } else {
@@ -149,6 +147,17 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          )
+        ],
       ),
       body: Container(
         color: Colors.orange, // Set the background color to orange
@@ -261,7 +270,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                     style: TextStyle(fontSize: 20),
                   ),
                 ),
-              )
+              ),
             ])),
       ),
     );

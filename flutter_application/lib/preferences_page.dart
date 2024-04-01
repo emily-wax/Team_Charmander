@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart';
 
 class PreferenceSlider extends StatefulWidget {
   @override
@@ -19,8 +20,10 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
   void _savePreferences() async {
     // Save the preferences to Firestore
+    UserModel currUserModel = await readData();
+
     try {
-      await _firestore.collection('users').doc('pKyWYjznujaUilHDVHmM').set({
+      await _firestore.collection('users').doc(currUserModel.id).set({
         'slider-prefs': {
           'cleaner': _cleanerValue,
           'organizer': _organizerValue,

@@ -1,12 +1,18 @@
+import 'dart:js_interop_unsafe';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'SignInPage.dart';
 import 'household_create.dart';
 import 'household_join.dart';
+import 'preferences_page.dart';
+import 'user_model.dart';
+import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // TODO: add a password for joining the house
-// TODO: household auto-deletes when no members are in?
+// TODO: household auto-deletes when no members are in? 
+// TODO: no households can have the same name
+// TODO: create a back home button
 
 class FourthPage extends StatefulWidget {
   @override
@@ -15,7 +21,7 @@ class FourthPage extends StatefulWidget {
 
 class _FourthPageState extends State<FourthPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  List<HouseholdModel> _households = [];
+  HouseholdModel? _household;
   bool _showJoinButton = true; // boolean to control visibility of Join butto
   String selectedTidy = 'Cleaner';
   String selectedTimeOfDay = 'Early Riser';
@@ -25,11 +31,29 @@ class _FourthPageState extends State<FourthPage> {
   final ValueNotifier<bool> isFirstButtonGreenVN = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isSecondButtonGreenVN = ValueNotifier<bool>(false);
   bool isPressed = false;
+  double _prefValue = 0.0;
   @override
   void initState() {
     super.initState();
     _fetchHouseholdsForCurrentUser();
   }
+
+Future<void> updateUserHousehold(String? userId, String householdName) async {
+
+  QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: userId).get();
+  List<QueryDocumentSnapshot> documents = querySnapshot.docs;
+
+  if(documents.isNotEmpty) {
+    QueryDocumentSnapshot document = documents.first;
+
+    DocumentReference documentReference = document.reference;
+
+    await documentReference.set({'currHouse': householdName}, SetOptions(merge: true));
+  } else {
+    print(' not added ');
+  }
+
+}
 
   Future<void> _fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
@@ -39,10 +63,15 @@ class _FourthPageState extends State<FourthPage> {
           .where('roommates', arrayContains: currentUser.email)
           .get();
       setState(() {
-        _households = snapshot.docs
-            .map((doc) => HouseholdModel.fromSnapshot(doc))
-            .toList();
-        _showJoinButton = _households.isEmpty;
+        if (snapshot.docs.isNotEmpty){
+          _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
+          updateUserHousehold( currentUser.email, _household!.name);
+          _showJoinButton = false;
+        } else {
+          _household = null;
+          updateUserHousehold( currentUser.email, "");
+          _showJoinButton = true;
+        }
       });
     }
   }
@@ -54,33 +83,58 @@ class _FourthPageState extends State<FourthPage> {
         .collection('households')
         .where('name', isEqualTo: houseName)
         .get()
-        .then((querySnapshot) {
+        .then((querySnapshot) async {
       if (querySnapshot.docs.isNotEmpty) {
         var document = querySnapshot.docs.first;
         List<dynamic> existingRoommates =
             List.from(document.data()['roommates']);
         if (existingRoommates.contains(_currentUser!.email)) {
           existingRoommates.remove(_currentUser.email);
-          document.reference.update({'roommates': existingRoommates}).then((_) {
-            setState(() {
-              // _households = _households.map((household) {
-              //   if (household.name == houseName) {
-              //     return HouseholdModel(
-              //       name: household.name,
-              //       max_roommate_count: household.max_roommate_count,
-              //       roommates: existingRoommates.cast<String>(),
-              //     );
-              //   }
-              //   return household;
-              // }).toList();
-              _fetchHouseholdsForCurrentUser();
+
+          if(existingRoommates.isEmpty) {
+
+            // delete household if no more roommates exist
+            DocumentReference currHouseRef = FirebaseFirestore.instance.collection('households').doc(houseName);
+
+            // TODO: deleting subcollections is hardcoded, put this in it's own function
+            QuerySnapshot appliancesSnapshot = await currHouseRef.collection('appliances').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in appliancesSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            QuerySnapshot choresSnapshot = await currHouseRef.collection('chores').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in choresSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
+            await currHouseRef.delete().then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household. It has been deleted.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
             });
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('You have left the household.'),
-            ));
-          }).catchError((error) {
-            print('Failed to update roommates list: $error');
-          });
+
+          } else {
+
+            // if there are still roommates left, just delete current user
+            document.reference.update({'roommates': existingRoommates}).then((_) {
+              setState(() {
+                _fetchHouseholdsForCurrentUser();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('You have left the household.'),
+              ));
+            }).catchError((error) {
+              print('Failed to update roommates list: $error');
+            });
+
+          }         
         }
       } else {
         print('Household not found.');
@@ -103,10 +157,10 @@ class _FourthPageState extends State<FourthPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
               FutureBuilder(
-                future: _readData(),
-                builder: ((context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasData) {
+                future: readData(),
+                builder:( (context, snapshot) {
+                  if( snapshot.connectionState == ConnectionState.done){
+                    if(snapshot.hasData){
                       UserModel? user = snapshot.data as UserModel;
 
                       // TODO: find a better way to display user data ...
@@ -123,49 +177,11 @@ class _FourthPageState extends State<FourthPage> {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text('Select 1 From Each Row:'),
+                                    title: Text('Adjust each scale:'),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _buildChoiceButton(context, 'Cleaner','tidy', 'cleaner'),
-                                        const Text("or"),
-                                        _buildChoiceButton(context, 'Organizer', 'tidy', 'organizer'),
-                                          ],
-                                        ),
-                                        
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context, 'Early Riser', 'timeOfDay', 'earlyRiser'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Night Owl', 'timeOfDay', 'nightOwl'),
-                                          ],
-                                        ),
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context, 'Chef', 'foodLogistics', 'chef'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Dishwasher', 'foodLogistics', 'outdoor'),
-                                          ],
-                                        ),
-                                        SizedBox(height: 16),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildChoiceButton(context,'Outdoor','location', 'outdoor'),
-                                            const Text("or"),
-                                            _buildChoiceButton(context, 'Indoor', 'location', 'indoor'),
-                                          ],
-                                        ),
+                                        PreferenceSlider(),
                                         SizedBox(height: 16),
                                         ElevatedButton(
                                           onPressed: () {
@@ -183,39 +199,28 @@ class _FourthPageState extends State<FourthPage> {
                           ),
 
                           Text('User Household:'),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _households.length,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                    title: Text(_households[index].name),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: _households[index]
-                                          .roommates
-                                          .map((email) => Text(email))
-                                          .toList(),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                            "Number of Household Members: ${_households[index].roommates.length}"),
-                                        SizedBox(width: 10),
-                                        IconButton(
-                                          onPressed: () {
-                                            removeFromHousehold(
-                                                _households[index].name);
-                                          },
-                                          icon: Icon(Icons.delete),
-                                        )
+                          SizedBox(height: 10,),
+                          if (_household != null)
+                                ListTile(
+                                  title: Text(_household!.name),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: _household!.roommates.map((email) => Text(email)).toList(),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("Number of Household Members: ${_household!.roommates.length}"),
+                                      SizedBox(width: 10),
+                                      IconButton(
+                                        onPressed: () {
+                                          removeFromHousehold(_household!.name);
+                                        } , 
+                                        icon: Icon(Icons.delete),
+                                      )
                                       ],
-                                    ));
-                              })
+                                    )
+                                )                        
                         ],
                       );
                     }
@@ -259,104 +264,6 @@ class _FourthPageState extends State<FourthPage> {
               )
             ])),
       ),
-    );
-  }
-
-  // displays current user data
-  Future<UserModel> _readData() async {
-    final db = FirebaseFirestore.instance;
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final User? user = auth.currentUser;
-
-    String? currEmail = user!.email;
-
-    final snapshot =
-        await db.collection("users").where("email", isEqualTo: currEmail).get();
-
-    final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
-
-    return userData;
-  }
-
-  MaterialStateProperty<Color> getColor(Color c1, Color c2){
-    final getColor = (Set<MaterialState> states) {
-      if (states.contains(MaterialState.pressed)) {
-        return c2;
-      }
-      else {
-        return c1;
-      }
-    };
-    return MaterialStateProperty.resolveWith(getColor);
-  }
-
-  MaterialStateProperty<BorderSide> getBorder(Color c1, Color c2) {
-    final getBorder = (Set<MaterialState> states) {
-      if (states.contains(MaterialState.pressed)) {
-        return BorderSide(color: c2, width: 2);
-      } else {
-        return BorderSide(color: c1, width: 2);
-      }
-    };
-    return MaterialStateProperty.resolveWith(getBorder);
-  }
-
-  Widget _buildChoiceButton(BuildContext context, String label, String category, String value) {
-    return ElevatedButton(
-      onPressed: () {
-        
-        setState(() {
-          selectedButton = value; // Update selected button
-          _submitChoice(category, value);
-        });
-      },
-      style: ButtonStyle(
-        foregroundColor: getColor(Colors.blue, Colors.white),
-        backgroundColor: getColor(Colors.white, Colors.green),
-        side: getBorder(Colors.white, Colors.black54), // Change button color based on selection
-      ),
-      child: Text(label),
-    );
-  }
-
-  void _submitChoice(String category, String value) {
-    FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').get().then((DocumentSnapshot snapshot) {
-      Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-      Map<String, String> chore_preferences = data['chore-preferences'] != null ? Map<String, String>.from(data['chore-preferences']) : {};
-
-      chore_preferences[category] = value;
-
-      FirebaseFirestore.instance.collection('users').doc('cxkVM8ZzLo9JzUWoS41B').set({
-        'chore-preferences': chore_preferences,
-      }, SetOptions(merge: true)).then((_) {
-        print('Preferences updated successfully!');
-      }).catchError((error) {
-        print('Failed to update preferences: $error');
-      });
-    }).catchError((error) {
-      print('Error getting document: $error');
-    });
-  }
-}
-
-class HouseholdModel {
-  final String name;
-  final int max_roommate_count;
-  final List<String> roommates;
-
-  HouseholdModel(
-      {required this.name,
-      required this.max_roommate_count,
-      required this.roommates});
-
-  factory HouseholdModel.fromSnapshot(DocumentSnapshot snapshot) {
-    Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>;
-    List<dynamic> roommates =
-        data['roommates'] != null ? List.from(data['roommates']) : [];
-    return HouseholdModel(
-      name: data['name'],
-      max_roommate_count: data['max_roommate_count'],
-      roommates: roommates.cast<String>(),
     );
   }
 }

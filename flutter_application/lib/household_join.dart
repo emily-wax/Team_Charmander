@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application/household_model.dart';
 import 'SignInPage.dart';
 import 'account_page.dart';
+import 'HomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -61,6 +62,29 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Household Join Form'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          ),
+          Tooltip(
+            message: 'Account Page',
+            child: IconButton(
+              icon: const Icon(Icons.account_circle_sharp),
+              onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AccountPage()),
+                  );
+              },
+            ),
+          )
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -142,6 +166,10 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('Incorrect Password.'),
             ));    
+          } else if ( existingArray.length >= house.max_roommate_count ){
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('This house has already hit the maximum amount of roommates.'),
+            ));   
           } else {
             existingArray.add(_currentUser.email);
             // Update the document with the modified array

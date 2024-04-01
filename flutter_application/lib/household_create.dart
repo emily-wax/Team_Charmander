@@ -2,10 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_application/household_model.dart';
-import 'SignInPage.dart';
+import 'HomePage.dart';
 import 'account_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 class HouseholdCreate extends StatelessWidget{
   @override
@@ -46,6 +45,29 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Household Creation Form'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          ),
+          Tooltip(
+            message: 'Account Page',
+            child: IconButton(
+              icon: const Icon(Icons.account_circle_sharp),
+              onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AccountPage()),
+                  );
+              },
+            ),
+          )
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),

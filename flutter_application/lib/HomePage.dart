@@ -36,10 +36,13 @@ class HomePage extends StatelessWidget {
               print('Home icon pressed!');
             },
           ),
-          IconButton( 
-            icon: Icon(Icons.logout),
-            onPressed:() => _logout(context),
-          ), 
+          Tooltip(
+            message: 'Log out',
+            child: IconButton( 
+              icon: Icon(Icons.logout),
+              onPressed:() => _logout(context),
+            ), 
+          )
         ],
       ),
       body: Container(

@@ -42,7 +42,7 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
-    choresCollection.doc(choreId).update({
+    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
         'choreName': choreName,
         'assignee': assignee,
         'deadline': deadline,
@@ -95,9 +95,9 @@ class _ToDoListState extends State<ToDoList> {
       appBar: AppBar(
         title: const Text('To-Do List'),
       ),
-      body: Container(
-        padding: const EdgeInsets.all(8),
-        color: Colors.purple[100],
+      // body: Container(
+      //   padding: const EdgeInsets.all(8),
+      //   color: Colors.purple[100],
 
       body: FutureBuilder<UserModel>(
         future: readData(),
@@ -150,7 +150,8 @@ class _ToDoListState extends State<ToDoList> {
                           Checkbox(
                             value: isCompleted,
                             onChanged: (value) {
-                              choresCollection.doc(choreId).update({'isCompleted': value});
+                              // choresCollection.doc(choreId).update({'isCompleted': value});
+                               FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
                             },
                           ),
                           const SizedBox(width: 8), // Add some spacing between checkbox and task details
@@ -212,9 +213,8 @@ class _ToDoListState extends State<ToDoList> {
               ),
             ),
           ],
-        ),
-      ),
-    );
+        );
+   
   }
 
   void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {

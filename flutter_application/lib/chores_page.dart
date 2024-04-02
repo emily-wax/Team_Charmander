@@ -25,10 +25,17 @@ class _ToDoListState extends State<ToDoList> {
     if (autoAssignChecked){
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
-      Future<String> autoAssignee = auto.autoAssignChore();
+      // Future<String> autoAssignee = auto.autoAssignChore();
+      // debugPrint("returned from autoAssignChore!!! Auto-Assignee: $autoAssignee");
+      // TODO: Turn autoAssignee into a regular ol' String
+      auto.autoAssignChore().then((String result){
+        setState(() {
+          assignee = result;
+        });
+      });
       FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
         'choreName': choreName,
-        'assignee': autoAssignee,
+        'assignee': assignee,
         'isCompleted': false,
         'deadline': deadline,
       });
@@ -411,7 +418,7 @@ class _ToDoListState extends State<ToDoList> {
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
                 if (choreName.isNotEmpty){
-                  if (selectedUser != null){
+                  if (selectedUser != null || autoAssignChecked){
                     _addChoreToFirestoreDrop(choreName, selectedUser, deadline);
                   }
                 //   else if (assignee.isNotEmpty){

@@ -6,15 +6,17 @@ class UserModel{
   final String? password;
   final String? id;
   final String? currHouse;
+  final Map? preferences;
 
-  UserModel( this.id, this.email, this.password, this.currHouse );
+  UserModel( this.id, this.email, this.password, this.currHouse, this.preferences );
 
   static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
     return UserModel(
       snapshot['id'], 
       snapshot['email'], 
       snapshot['password'],
-      snapshot['currHouse']
+      snapshot['currHouse'],
+      snapshot['slider-prefs']
     );
   }
 
@@ -23,7 +25,8 @@ class UserModel{
       "id": id,
       "email": email,
       "password": password,
-      "currHouse": currHouse
+      "currHouse": currHouse,
+      "slider-prefs": preferences
     };
   }
 }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
+import 'dart:math';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -104,6 +105,20 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
+String generateRandomColorString() {
+  final random = Random();
+  // Generate random values for red, green, and blue components
+  int red = random.nextInt(256); // Random value between 0 and 255
+  int green = random.nextInt(256);
+  int blue = random.nextInt(256);
+  // Convert the RGB values to hexadecimal string representation
+  String redHex = red.toRadixString(16).padLeft(2, '0'); // Ensure two digits
+  String greenHex = green.toRadixString(16).padLeft(2, '0');
+  String blueHex = blue.toRadixString(16).padLeft(2, '0');
+  // Concatenate the hexadecimal values to form the color string
+  return '0xFF$redHex$greenHex$blueHex';
+}
+
   void _authenticate() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -119,7 +134,8 @@ class _SignInPageState extends State<SignInPage> {
           await authService.signUpWithEmailAndPassword(email, password);
           
           // adds user to database when signing up
-          _createData(UserModel('0', email, password));
+
+          _createData(UserModel('0', email, password, generateRandomColorString()));
 
         } else {
           // Sign In
@@ -159,6 +175,7 @@ class _SignInPageState extends State<SignInPage> {
         id,
         userModel.email, 
         userModel.password,
+        userModel.color
       ).toJson();
 
       userCollection.doc(id).set(newUser);
@@ -171,14 +188,16 @@ class UserModel{
   final String? email;
   final String? password;
   final String? id;
+  final String? color;
 
-  UserModel( this.id, this.email, this.password);
+  UserModel( this.id, this.email, this.password, this.color);
 
   static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
     return UserModel(
       snapshot['id'], 
       snapshot['email'], 
-      snapshot['password']
+      snapshot['password'],
+      snapshot['color']
     );
   }
 
@@ -187,6 +206,7 @@ class UserModel{
       "id": id,
       "email": email,
       "password": password,
+      "color": color
     };
   }
 }

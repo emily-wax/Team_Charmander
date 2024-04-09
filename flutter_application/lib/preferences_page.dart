@@ -17,6 +17,47 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  @override
+  void initState() {
+    super.initState();
+    // Fetch values from Firestore when the dialog is initialized
+    fetchDataFromFirestore();
+  }
+
+  // Method to fetch data from Firestore
+  void fetchDataFromFirestore() async {
+    UserModel currUserModel = await readData();
+
+    // Fetch values from Firestore and update state variables accordingly
+    // Example:
+    try {
+      await _firestore
+        .collection('users')
+        .doc(currUserModel.id)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> sliderPrefs = documentSnapshot['slider-prefs'];
+
+        setState(() {
+          _cleanerValue = sliderPrefs['cleaner'] ?? 0.5;
+          // _cleanerValue = documentSnapshot['cleaner'];
+          _organizerValue = sliderPrefs['organizer'] ?? 0.5;
+          _outdoorValue = sliderPrefs['outdoor'] ?? 0.5;
+          _morningValue = sliderPrefs['morning'] ?? 0.5;
+          _eveningValue = sliderPrefs['evening'] ?? 0.5;
+        });
+      } else {
+        debugPrint('Document does not exist on the database');
+      }
+    });
+    } catch (e) {
+      debugPrint('Failed to grab preferences: $e');
+    }
+  }
+
+
+  // potentially need to do update() instead of set()
   void _savePreferences() async {
     UserModel currUserModel = await readData();
     try {

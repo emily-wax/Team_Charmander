@@ -115,21 +115,59 @@ class AutoAssignClass extends StatefulWidget {
         // debugPrint(sliderPrefs.keys.toString());
       }
 
-    debugPrint("HERE1");
-    Map<String, String> algorithmicPreferences =
-        await assignPreferences(sliderPrefs, existingRoommates.length);
-    debugPrint("HERE2");
-    // more likely than not, this will need to change to Future<String>
+    // PHASE 1: Determine if all roomies are assigned an equal number of chores. If yes, good. If no, assign to whoever has the lowest number of chores.
+    String minAssignee = await isEqualNumChores(currUserModel);
+    if (minAssignee != "equal"){
+      debugPrint("assignee determined within phase 1");
+      return minAssignee;
+    }
 
-
+    // PHASE 2: The modified Adjusted Winner Algorithm
+    Map<String, String> algorithmicPreferences = await assignPreferences(sliderPrefs, existingRoommates.length);
+    debugPrint("FINAL ASSIGNMENT FOR REAL: $algorithmicPreferences");
     // return algorithmicChoice;
 
+    // PHASE 3: Nothing else yielded a result, so just pick someone at random
     Future<String> randomChoice = _getRandomUser(existingRoommates);
     String awaitedRandomChoice = await randomChoice;
     return awaitedRandomChoice;
   }
 }
-  
+
+  Future<String> isEqualNumChores(UserModel um) async {
+    debugPrint("=========isEqualNumChores()============");
+    List<String> assigneeEmails = [];
+     try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('households')
+          .doc(um.currHouse)
+          .collection('chores')
+          .get();
+
+      querySnapshot.docs.forEach((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+          String assignee = data['assignee'] as String;
+            assigneeEmails.add(assignee);
+      });
+
+    Map<String, int> frequencyMap = {};
+    for (String a in assigneeEmails) {
+      frequencyMap[a] = (frequencyMap[a] ?? 0) + 1;
+    }
+    int firstFrequency = frequencyMap.values.first;
+    bool isFrequencyEqual = frequencyMap.values.every((frequency) => frequency == firstFrequency);
+    String? minFrequencyAssignee;
+    if (!isFrequencyEqual) {
+      int minFrequency = frequencyMap.values.reduce((value, element) => value < element ? value : element);
+      minFrequencyAssignee = frequencyMap.keys.firstWhere((key) => frequencyMap[key] == minFrequency);
+      return minFrequencyAssignee;
+    }
+    } catch (e) {
+      debugPrint('Error getting chores: $e');
+      // Handle error
+    }
+    return "equal";
+  }
 
   Future<Map<String, String>> assignPreferences(Map<String, dynamic> sp, int numRoommates) async {
     ///////////////////////////////////////////////////////// Adjusted Winner algorithm here

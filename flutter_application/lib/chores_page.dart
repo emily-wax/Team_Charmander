@@ -25,7 +25,7 @@ class _ToDoListState extends State<ToDoList> {
     if (autoAssignChecked){
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
-      auto.autoAssignChore().then((String result){
+      auto.autoAssignChore(choreName).then((String result){
         setState(() {
           assignee = result;
           debugPrint("assignee $assignee");

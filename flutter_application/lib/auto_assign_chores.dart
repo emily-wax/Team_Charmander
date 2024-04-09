@@ -12,12 +12,12 @@ class AutoAssignClass extends StatefulWidget {
   @override
   _AutoAssignState createState() => _AutoAssignState();
 
-  Future<String> autoAssignChore() {
-    return _getUser();
+  Future<String> autoAssignChore(String choreName) {
+    return _getUser(choreName);
   }
 
   // eventually, this function will be used to run the Modified Adjusted Winner Allocation Algorithm
-  Future<String> _getUser() async {
+  Future<String> _getUser(String choreName) async {
     // Fetch and save all roommates' emails in the user's household
     UserModel currUserModel = await readData();
     HouseholdModel currHouseModel = HouseholdModel.fromSnapshot(
@@ -26,115 +26,102 @@ class AutoAssignClass extends StatefulWidget {
             .doc(currUserModel.currHouse)
             .get());
     List<String> existingRoommates = currHouseModel.roommates;
-    // final Map<String, dynamic> sliderPrefs = {};
-    // final Map<String, LinkedMap<String, dynamic>> sliderPrefs = {};
+    Map<String, dynamic> sliderPrefs = {};
 
-    // Fetch the "slider-prefs" of all roommates in the household
-    // debugPrint("Existing roommates in _getUser() $existingRoommates");
-    // for (String roomieEmail in existingRoommates) {
-    //   debugPrint("roomieEmail $roomieEmail");
-      // QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .where('email', isEqualTo: roomieEmail)
-      //     .get();
-
-
-
-      // QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .where(roomieEmail)
-      //     .get();
-
-      //   if (userSnapshot.docs.isNotEmpty) {
-      //     DocumentSnapshot userDoc = userSnapshot.docs.first;
-      //     sliderPrefs[roomieEmail] = userDoc['slider-prefs'];
-      //   }
-      // debugPrint("Slider prefs: $sliderPrefs");
-
-
-      Map<String, dynamic> sliderPrefs = {};
-
-      // Iterate through each roommate's email address
-      for (String email in existingRoommates) {
-        // Fetch the user document corresponding to the email address
-        try {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+    // Iterate through each roommate's email address
+    for (String email in existingRoommates) {
+      // Fetch the user document corresponding to the email address
+      debugPrint("email to try to pref is $email");
+      try {
+        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('users')
-            .doc('6mqFosksgFaz4M3RVYv2')
+            .where('email', isEqualTo: email)
             .get();
-        // Check if the user document exists and has data
-        if (userSnapshot.exists && userSnapshot.data() != null) {
-          // Explicitly cast the data to Map<String, dynamic>
-          Map<String, dynamic> userData =
-              userSnapshot.data() as Map<String, dynamic>;
-
-          // Extract the 'slider-prefs' attribute from the user document
-          Map<String, dynamic> userPrefs = userData['slider-prefs'];
-
-          // Add the user's slider preferences to the sliderPrefs map
-          sliderPrefs[email] = userPrefs;
-        } else {
-          print("User document not found for email: $email");
+        if (userSnapshot.docs.isNotEmpty) {
+        DocumentSnapshot userDoc = userSnapshot.docs.first;
+        sliderPrefs[email] = userDoc['slider-prefs'];
         }
-        } catch (e) {
-          print("Error executing query: $e");
-        }
-        
+      } catch (e) {
+        debugPrint("Error executing query: $e");
+
       }
-
-      // Print all slider prefs
-      print("Slider Prefs:");
-      sliderPrefs.forEach((email, prefs) {
-        print("$email, $prefs");
-      });
-      String algorithmicChoice = await runComplexAlgorithm(sliderPrefs, existingRoommates.length);
-      // more likely than not, this will need to change to Future<String>
-      return algorithmicChoice;
-    //   try {
-    //     QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-    //         .collection('users')
-    //         .where('email', isEqualTo: roomieEmail)
-    //         .get();
-    //     if (userSnapshot.docs.isNotEmpty) {
-    //     DocumentSnapshot userDoc = userSnapshot.docs.first;
-    //     sliderPrefs[roomieEmail] = userDoc['slider-prefs'];
-    //     }
-    //     // Handle the result...
-    //     debugPrint("Slider prefs: $sliderPrefs");
-    //     final Map<String, Map<String, double>> finalSliderPrefs = Map.from(sliderPrefs);
-    // String algorithmicChoice = await runComplexAlgorithm(
-    //     finalSliderPrefs,
-    //     existingRoommates
-    //         .length);
-    //         // more likely than not, this will need to change to Future<String>
-    // return algorithmicChoice;
-    //   } catch (e) {
-    //     print("Error executing query: $e");
-      
-      
-    //   }
-      
-        // debugPrint("SLIDER PREFS CREATED.");
-        // debugPrint(sliderPrefs.keys.toString());
-    
-    // Future<String> randomChoice = _getRandomUser(existingRoommates);
-    // String awaitedRandomChoice = await randomChoice;
-    // return awaitedRandomChoice;
     }
-    
+
+    // PHASE 1: Determine if all roomies are assigned an equal number of chores. If yes, good. If no, assign to whoever has the lowest number of chores.
+    String minAssignee = await isEqualNumChores(currUserModel);
+    if (minAssignee != "equal"){
+      debugPrint("assignee determined within phase 1");
+      return minAssignee;
+    }
+
+    // PHASE 2: The modified Adjusted Winner Algorithm
+    // Part 1: Adjust all preferences for winners.
+    Map<String, String> algorithmicPreferences = await assignPreferences(sliderPrefs, existingRoommates.length);
+    debugPrint("FINAL ASSIGNMENT FOR REAL: $algorithmicPreferences");
+    // Part 2: Figure out what chore type it is.
+    List<String> choreNameWords = choreName.split(' ');
+    for (String word in choreNameWords) {
+      // Check if the word contains "clean" (case insensitive)
+      if (word.toLowerCase().contains('clean')) {
+        return algorithmicPreferences['cleaner'] ?? '';
       }
-        // return the user
-    
+      else if (word.toLowerCase().contains('organize')) {
+        return algorithmicPreferences['organizer'] ?? '';
+      }
+      else if (word.toLowerCase().contains('trash')){
+        return algorithmicPreferences['outdoor'] ?? '';
+      }
+    }
+    // PHASE 3: Nothing else yielded a conclusive result, so just pick someone at random
+    Future<String> randomChoice = _getRandomUser(existingRoommates);
+    String awaitedRandomChoice = await randomChoice;
+    return awaitedRandomChoice;
+  }
+}
 
-  
+  Future<String> isEqualNumChores(UserModel um) async {
+    debugPrint("=========isEqualNumChores()============");
+    List<String> assigneeEmails = [];
+     try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('households')
+          .doc(um.currHouse)
+          .collection('chores')
+          .get();
 
-  Future<String> runComplexAlgorithm(Map<String, dynamic> sp, int numRoommates) async {
-    ///////////////////////////////////////////////////////// Adjusted Winner algorithm here
+      querySnapshot.docs.forEach((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+          String assignee = data['assignee'] as String;
+            assigneeEmails.add(assignee);
+      });
+
+    Map<String, int> frequencyMap = {};
+    for (String a in assigneeEmails) {
+      frequencyMap[a] = (frequencyMap[a] ?? 0) + 1;
+    }
+    int firstFrequency = frequencyMap.values.first;
+    bool isFrequencyEqual = frequencyMap.values.every((frequency) => frequency == firstFrequency);
+    String? minFrequencyAssignee;
+    if (!isFrequencyEqual) {
+      int minFrequency = frequencyMap.values.reduce((value, element) => value < element ? value : element);
+      minFrequencyAssignee = frequencyMap.keys.firstWhere((key) => frequencyMap[key] == minFrequency);
+      return minFrequencyAssignee;
+    }
+    } catch (e) {
+      debugPrint('Error getting chores: $e');
+      // Handle error
+    }
+    return "equal";
+  }
+
+  Future<Map<String, String>> assignPreferences(Map<String, dynamic> sp, int numRoommates) async {
     //
     // [OPTIONAL] (not in this file): First make sure that preferences page caps the total points assignable to 0.8p where p is the number of preferences.
     //
     // For each preference, determine which roommate wins that preference (naive). Ties are awarded based on who has the lower number of wins at the time of the tie (well, ideally). Result: winningPrefNaive is a map containing the winner of each category and their score.
+    debugPrint("=====================runComplexAlgorithm()====================================");
     Map<String, List<dynamic>> winningPrefNaive = {};
+    Map<String, String> winningPrefNaiveCategoriesOnly = {};
     Map<String, List<dynamic>> losingPrefNaive = {};
     List<String> roomieEmails = sp.keys.toList();
 
@@ -158,6 +145,7 @@ class AutoAssignClass extends StatefulWidget {
         }
         List<dynamic> maxTuple = [maxValRoomieEmail, maxVal];
         winningPrefNaive[choreCategory1] = maxTuple;
+        winningPrefNaiveCategoriesOnly[choreCategory1] = maxValRoomieEmail;
         List<dynamic> minTuple = [minValRoomieEmail, minVal];
         losingPrefNaive[choreCategory1] = minTuple;
 
@@ -172,30 +160,30 @@ class AutoAssignClass extends StatefulWidget {
     // Iterate through winning preferences and increment user variables
     winningPrefNaive.forEach((choreCategory, values) {
       String userEmail = values[0];
-      print("wPN email $userEmail");
+      // debugPrint("wPN email $userEmail");
       double value = values[1];
       userVariablesMax[userEmail] = (userVariablesMax[userEmail] ?? 0.0) + value;
     });
 
-    debugPrint("winningPrefNaive $winningPrefNaive");
-    debugPrint("userVariablesMax $userVariablesMax");
+    // debugPrint("winningPrefNaive $winningPrefNaive");
+    // debugPrint("userVariablesMax $userVariablesMax");
     // Print out the values of user variables
     userVariablesMax.forEach((userEmail, value) {
-      debugPrint('User $userEmail: $value');
+      // debugPrint('User $userEmail: $value');
     });
 
     losingPrefNaive.forEach((choreCategory, values) {
       String userEmail = values[0];
-      print("LPN email $userEmail");
+      // debugPrint("LPN email $userEmail");
       double value = values[1];
       userVariablesMin[userEmail] = (userVariablesMin[userEmail] ?? 0.0) + value;
     });
 
-    debugPrint("losingPrefNaive $losingPrefNaive");
-    debugPrint("userVariablesMin $userVariablesMin");
+    // debugPrint("losingPrefNaive $losingPrefNaive");
+    // debugPrint("userVariablesMin $userVariablesMin");
     // Print out the values of user variables
     userVariablesMin.forEach((userEmail, value) {
-      debugPrint('User $userEmail: $value');
+      // debugPrint('User $userEmail: $value');
     });
 
     /// Crown a winningest roommate and losingest roommate
@@ -215,9 +203,9 @@ class AutoAssignClass extends StatefulWidget {
         minValue = value;
       }
     });
-    debugPrint("W $winningestRoommate L $losingestRoommate");
-    debugPrint(userVariablesMax.toString());
-    debugPrint(userVariablesMin.toString());
+    // debugPrint("W $winningestRoommate L $losingestRoommate");
+    // debugPrint(userVariablesMax.toString());
+    // debugPrint(userVariablesMin.toString());
     
 
     /// TODO: Create a ratio for each preference (winningest/losingest)
@@ -235,57 +223,71 @@ class AutoAssignClass extends StatefulWidget {
    List<String> missingRoomies = List.from(roomieEmails);
    winningPrefNaive.forEach((category, userData) {
    String userEmail = userData.first;
-   debugPrint("useremail $userEmail");
+  //  debugPrint("useremail $userEmail");
    if (missingRoomies.contains(userEmail)) {
      missingRoomies.remove(userEmail);
    }
    });
-   debugPrint("missing: $missingRoomies");
+  //  debugPrint("missing: $missingRoomies");
 
    // TODO: For each missing roomie, assign them their highest preference.
-  Map<String, double> missingRoomiesPrefs = {};
-  if (missingRoomies.length == 1){
-    String missingRoomiesEmail = missingRoomies.first;
-    debugPrint(missingRoomiesEmail);
-    Map<dynamic, dynamic> roomieValues = sp[missingRoomiesEmail];
-    debugPrint(roomieValues.toString());
-
+  // Map<String, double> missingRoomiesPrefs = {};
+  Map<String, String> theFinalAssignment = {}; // <email, category>
+  // List<String> missingRoomiesFake = ['jerry.lisd100@gmail.com'];
+  if (missingRoomies.isEmpty){
+    // then we are so back
+    theFinalAssignment = winningPrefNaiveCategoriesOnly;
+    // debugPrint("missingRoomies.length == 0 >>> $theFinalAssignment");
   }
-  // for (String roomieEmail in missingRoomies) {
+
+  if (missingRoomies.length == 1){
+    String missingRoomiesEmail = missingRoomies[0];
+    // debugPrint(missingRoomiesEmail);
+    Map<dynamic, dynamic> roomieValues = sp[missingRoomiesEmail];
+    // debugPrint(roomieValues.toString());
+  
+    Map<String, int> emailCountMap = {};
+    // Iterate through the categoryEmailMap and count occurrences of each email
+    winningPrefNaiveCategoriesOnly.forEach((category, email) {
+        emailCountMap.update(email, (value) => value + 1, ifAbsent: () => 1);
+      });
+
+    // debugPrint('Most frequent email address: $mostFrequentEmail');
+
+    // debugPrint("1 missed roomie; his sliderPrefs:");
+    // debugPrint(roomieValues.toString());
+
+    List<MapEntry<dynamic, dynamic>> sortedRoomieValuesList = roomieValues.entries.toList();
+
+    // Sort the list based on the double values
+    sortedRoomieValuesList.sort((a, b) => b.value.compareTo(a.value));
+
+    // Convert the sorted list back into a map
+    Map<dynamic, dynamic> sortedRoomieValues = Map.fromEntries(sortedRoomieValuesList);
+
+    sortedRoomieValues.forEach((key, value) {
+      debugPrint('$key: $value');
+    });
+
+    bool reassigned = false;
+    sortedRoomieValues.forEach((key, value) {
+      if (reassigned) return;
+      String? email = theFinalAssignment[key];
+      if (email != null) {
+        int count = theFinalAssignment.values.where((e) => e == email).length;
+        if (count > 1) {
+          theFinalAssignment[key] = missingRoomiesEmail;
+          reassigned = true;
+        }
+      }
+    });
     
-  //     // First, check if the key exists in the map
-  //     if (sp.containsKey(roomieEmail)) {
-  //       debugPrint("F");
-  //       // Access the value corresponding to the key
-  //       Map<String, double> roomieValues = sp[roomieEmail.toString()];
-
-  //       // Now you have the map containing category and value pairs
-  //       // You can access individual values by their category key
-  //       roomieValues.forEach((category, value) {
-  //         // Here you have access to each category and its value for the current missing roomie
-  //         print('Email: $roomieEmail, Category: $category, Value: $value');
-  //         // Do whatever processing you need to do with the category and value
-  //       });
-  //     } else {
-  //       // Handle the case where the missing roomie's email is not found in the map
-  //       debugPrint('No data found for email: $roomieEmail');
-  //     }
-  //   }
-
-    /// TODO: Determine the highest pref ratio. This is the one where the winningest preferred it the most and the losingest preferred it the least.
-    ///   If r = 2, do nothing.
-    ///   If r > 2, award to a middle roommate at random.
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
-
-
-    String result = await _getRandomUser(roomieEmails);
-
-    // Now you have the result as a String
-    return result;
+    if (!reassigned) {
+      debugPrint("Somehow, there was no reassignment possible.");
+    }
+    // debugPrint("missingRoomies.length == 1 >>> $theFinalAssignment");
+  }
+    return theFinalAssignment;
   }
 
   Future<String> _getRandomUser(List<String> roommates) async {

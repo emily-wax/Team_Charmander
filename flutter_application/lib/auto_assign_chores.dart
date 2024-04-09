@@ -12,12 +12,12 @@ class AutoAssignClass extends StatefulWidget {
   @override
   _AutoAssignState createState() => _AutoAssignState();
 
-  Future<String> autoAssignChore() {
-    return _getUser();
+  Future<String> autoAssignChore(String choreName) {
+    return _getUser(choreName);
   }
 
   // eventually, this function will be used to run the Modified Adjusted Winner Allocation Algorithm
-  Future<String> _getUser() async {
+  Future<String> _getUser(String choreName) async {
     // Fetch and save all roommates' emails in the user's household
     UserModel currUserModel = await readData();
     HouseholdModel currHouseModel = HouseholdModel.fromSnapshot(
@@ -26,73 +26,12 @@ class AutoAssignClass extends StatefulWidget {
             .doc(currUserModel.currHouse)
             .get());
     List<String> existingRoommates = currHouseModel.roommates;
-    // final Map<String, dynamic> sliderPrefs = {};
-    // final Map<String, LinkedMap<String, dynamic>> sliderPrefs = {};
+    Map<String, dynamic> sliderPrefs = {};
 
-    // Fetch the "slider-prefs" of all roommates in the household
-    // debugPrint("Existing roommates in _getUser() $existingRoommates");
-    // for (String roomieEmail in existingRoommates) {
-    //   debugPrint("roomieEmail $roomieEmail");
-      // QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .where('email', isEqualTo: roomieEmail)
-      //     .get();
-
-
-
-      // QuerySnapshot userSnapshot = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .where(roomieEmail)
-      //     .get();
-
-      //   if (userSnapshot.docs.isNotEmpty) {
-      //     DocumentSnapshot userDoc = userSnapshot.docs.first;
-      //     sliderPrefs[roomieEmail] = userDoc['slider-prefs'];
-      //   }
-      // debugPrint("Slider prefs: $sliderPrefs");
-
-
-      Map<String, dynamic> sliderPrefs = {};
-
-      // Iterate through each roommate's email address
-      for (String email in existingRoommates) {
-        // Fetch the user document corresponding to the email address
-        debugPrint("email to try to pref is $email");
-//         try {
-//         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-//             .collection('users')
-//             .doc(email)
-//             .get();
-//         // Check if the user document exists and has data
-//         if (userSnapshot.exists && userSnapshot.data() != null) {
-//           // Explicitly cast the data to Map<String, dynamic>
-//           Map<String, dynamic> userData =
-//               userSnapshot.data() as Map<String, dynamic>;
-
-//           // Extract the 'slider-prefs' attribute from the user document
-//           Map<String, dynamic> userPrefs = userData['slider-prefs'];
-
-//           // Add the user's slider preferences to the sliderPrefs map
-//           sliderPrefs[email] = userPrefs;
-//         } else {
-//           debugPrint("User document not found for email: $email");
-//         }
-//         } catch (e) {
-//           debugPrint("Error executing query: $e");
-//         }
-        
-//       }
-
-//       // Print all slider prefs
-//       debugPrint("Slider Prefs:");
-//       sliderPrefs.forEach((email, prefs) {
-//         debugPrint("$email, $prefs");
-//       });
-//       String algorithmicChoice = await runComplexAlgorithm(sliderPrefs, existingRoommates.length);
-//       // more likely than not, this will need to change to Future<String>
-//       return algorithmicChoice;
-//   }
-// }
+    // Iterate through each roommate's email address
+    for (String email in existingRoommates) {
+      // Fetch the user document corresponding to the email address
+      debugPrint("email to try to pref is $email");
       try {
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('users')
@@ -102,18 +41,11 @@ class AutoAssignClass extends StatefulWidget {
         DocumentSnapshot userDoc = userSnapshot.docs.first;
         sliderPrefs[email] = userDoc['slider-prefs'];
         }
-        // Handle the result...
-        debugPrint("Slider prefs: $sliderPrefs");
-        // final Map<String, Map<String, double>> finalSliderPrefs = Map.from(sliderPrefs);
-        
       } catch (e) {
         debugPrint("Error executing query: $e");
-      
-      
+
       }
-        // debugPrint("SLIDER PREFS CREATED.");
-        // debugPrint(sliderPrefs.keys.toString());
-      }
+    }
 
     // PHASE 1: Determine if all roomies are assigned an equal number of chores. If yes, good. If no, assign to whoever has the lowest number of chores.
     String minAssignee = await isEqualNumChores(currUserModel);
@@ -123,11 +55,24 @@ class AutoAssignClass extends StatefulWidget {
     }
 
     // PHASE 2: The modified Adjusted Winner Algorithm
+    // Part 1: Adjust all preferences for winners.
     Map<String, String> algorithmicPreferences = await assignPreferences(sliderPrefs, existingRoommates.length);
     debugPrint("FINAL ASSIGNMENT FOR REAL: $algorithmicPreferences");
-    // return algorithmicChoice;
-
-    // PHASE 3: Nothing else yielded a result, so just pick someone at random
+    // Part 2: Figure out what chore type it is.
+    List<String> choreNameWords = choreName.split(' ');
+    for (String word in choreNameWords) {
+      // Check if the word contains "clean" (case insensitive)
+      if (word.toLowerCase().contains('clean')) {
+        return algorithmicPreferences['cleaner'] ?? '';
+      }
+      else if (word.toLowerCase().contains('organize')) {
+        return algorithmicPreferences['organizer'] ?? '';
+      }
+      else if (word.toLowerCase().contains('trash')){
+        return algorithmicPreferences['outdoor'] ?? '';
+      }
+    }
+    // PHASE 3: Nothing else yielded a conclusive result, so just pick someone at random
     Future<String> randomChoice = _getRandomUser(existingRoommates);
     String awaitedRandomChoice = await randomChoice;
     return awaitedRandomChoice;
@@ -170,7 +115,6 @@ class AutoAssignClass extends StatefulWidget {
   }
 
   Future<Map<String, String>> assignPreferences(Map<String, dynamic> sp, int numRoommates) async {
-    ///////////////////////////////////////////////////////// Adjusted Winner algorithm here
     //
     // [OPTIONAL] (not in this file): First make sure that preferences page caps the total points assignable to 0.8p where p is the number of preferences.
     //
@@ -352,46 +296,9 @@ class AutoAssignClass extends StatefulWidget {
     if (!reassigned) {
       debugPrint("Somehow, there was no reassignment possible.");
     }
-
     debugPrint("missingRoomies.length == 1 >>> $theFinalAssignment");
   }
-  // for (String roomieEmail in missingRoomies) {
-    
-  //     // First, check if the key exists in the map
-  //     if (sp.containsKey(roomieEmail)) {
-  //       debugPrint("F");
-  //       // Access the value corresponding to the key
-  //       Map<String, double> roomieValues = sp[roomieEmail.toString()];
-
-  //       // Now you have the map containing category and value pairs
-  //       // You can access individual values by their category key
-  //       roomieValues.forEach((category, value) {
-  //         // Here you have access to each category and its value for the current missing roomie
-  //         print('Email: $roomieEmail, Category: $category, Value: $value');
-  //         // Do whatever processing you need to do with the category and value
-  //       });
-  //     } else {
-  //       // Handle the case where the missing roomie's email is not found in the map
-  //       debugPrint('No data found for email: $roomieEmail');
-  //     }
-  //   }
-
-    /// TODO: Determine the highest pref ratio. This is the one where the winningest preferred it the most and the losingest preferred it the least.
-    ///   If r = 2, do nothing.
-    ///   If r > 2, award to a middle roommate at random.
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
-    /// 
     return theFinalAssignment;
-
-
-    // String result = await _getRandomUser(roomieEmails);
-
-    // // Now you have the result as a String
-    // return result;
   }
 
   Future<String> _getRandomUser(List<String> roommates) async {

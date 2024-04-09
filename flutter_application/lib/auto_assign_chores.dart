@@ -178,7 +178,7 @@ class AutoAssignClass extends StatefulWidget {
     });
 
     debugPrint("winningPrefNaive $winningPrefNaive");
-    debugPrint("userVariables $userVariablesMax");
+    debugPrint("userVariablesMax $userVariablesMax");
     // Print out the values of user variables
     userVariablesMax.forEach((userEmail, value) {
       debugPrint('User $userEmail: $value');
@@ -189,6 +189,13 @@ class AutoAssignClass extends StatefulWidget {
       print("LPN email $userEmail");
       double value = values[1];
       userVariablesMin[userEmail] = (userVariablesMin[userEmail] ?? 0.0) + value;
+    });
+
+    debugPrint("losingPrefNaive $losingPrefNaive");
+    debugPrint("userVariablesMin $userVariablesMin");
+    // Print out the values of user variables
+    userVariablesMin.forEach((userEmail, value) {
+      debugPrint('User $userEmail: $value');
     });
 
     /// Crown a winningest roommate and losingest roommate
@@ -240,7 +247,9 @@ class AutoAssignClass extends StatefulWidget {
   if (missingRoomies.length == 1){
     String missingRoomiesEmail = missingRoomies.first;
     debugPrint(missingRoomiesEmail);
-    // Map<String, double> roomieValues = sp[missingRoomiesEmail];
+    Map<dynamic, dynamic> roomieValues = sp[missingRoomiesEmail];
+    debugPrint(roomieValues.toString());
+
   }
   // for (String roomieEmail in missingRoomies) {
     
@@ -271,8 +280,6 @@ class AutoAssignClass extends StatefulWidget {
     /// 
     /// 
     /// 
-
-
 
 
     String result = await _getRandomUser(roomieEmails);

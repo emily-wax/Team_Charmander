@@ -1,5 +1,3 @@
-import 'dart:js_interop_unsafe';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'household_create.dart';
@@ -25,12 +23,8 @@ class _AccountPageState extends State<AccountPage> {
   String selectedTidy = 'Cleaner';
   String selectedTimeOfDay = 'Early Riser';
   String selectedButton = "";
-  bool isFirstButtonGreen = false;
-  bool isSecondButtonGreen = false;
-  final ValueNotifier<bool> isFirstButtonGreenVN = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> isSecondButtonGreenVN = ValueNotifier<bool>(false);
-  bool isPressed = false;
-  double _prefValue = 0.0;
+  double prefSum = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +43,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
     await documentReference.set({'currHouse': householdName}, SetOptions(merge: true));
   } else {
-    print(' not added ');
+    debugPrint(' not added ');
   }
 
 }
@@ -178,8 +172,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                       return Column(
                         children: [
                           Text(user.email!),
-                          SizedBox(height: 20),
-                          // TODO: preferences here
+                          const SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: () {
                               showDialog(
@@ -190,13 +183,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        // const Text("For best results, keep total score < 4.0"),
                                         PreferenceSlider(),
-                                        SizedBox(height: 16),
+                                        const SizedBox(height: 16),
                                         ElevatedButton(
                                           onPressed: () {
                                             Navigator.of(context).pop();
                                           },
-                                          child: Text('Submit'),
+                                          child: const Text('Submit'),
                                         ),
                                       ],
                                     ),
@@ -204,7 +198,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                 },
                               );
                             },
-                            child: Text('Set Preferences'),
+                            child: const Text('Set Preferences'),
                           ),
 
                           Text('User Household:'),

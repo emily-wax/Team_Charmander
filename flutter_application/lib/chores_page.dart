@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_model.dart';
 import 'household_model.dart';
+import 'auto_assign_chores.dart';
 
 class ToDoList extends StatefulWidget {
   const ToDoList({Key? key}) : super(key: key);
@@ -12,33 +13,40 @@ class ToDoList extends StatefulWidget {
 }
 
 class _ToDoListState extends State<ToDoList> {
-  TextEditingController taskController = TextEditingController();
+  // TextEditingController taskController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // CollectionReference choresCollection = FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores');
-
-  // add chore to firestore given an assignee who was manually typed
-  // I'm commenting this out because more options isn't always better - manual assignees could lead to weird edge cases in other parts of the app
-  // because the way things are saved to Firestore must be specific and clear; allowing users to manually assign could lead to typos and non-existent roommates!
-  // void _addChoreToFirestore(String choreName, String assignee, Timestamp? deadline) {
-  //   choresCollection.add({
-  //     'choreName': choreName,
-  //     'assignee': assignee,
-  //     'isCompleted': false,
-  //     'deadline': deadline,
-  //   });
-  // }
+  // String autoAssignee = "";
 
   // add chore to firestore given an assignee that was selected from a dropdown
   void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
-      'choreName': choreName,
-      'assignee': assignee,
-      'isCompleted': false,
-      'deadline': deadline,
-    });
+    if (autoAssignChecked){
+      debugPrint("Auto Assign checked!");
+      AutoAssignClass auto = AutoAssignClass();
+      auto.autoAssignChore().then((String result){
+        setState(() {
+          assignee = result;
+          debugPrint("assignee $assignee");
+          FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
+            'choreName': choreName,
+            'assignee': assignee,
+            'isCompleted': false,
+            'deadline': deadline,
+          });
+        });
+      });      
+    }
+    else {
+      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
+        'choreName': choreName,
+        'assignee': assignee,
+        'isCompleted': false,
+        'deadline': deadline,
+      });
+    }
+    
   }
 
   void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
@@ -73,11 +81,11 @@ class _ToDoListState extends State<ToDoList> {
           currHouse = HouseholdModel.fromSnapshot(querySnapshot.docs.first);
           _users = currHouse.roommates;
         } else {
-          print('error loading roommates');
+          debugPrint('error loading roommates');
         }
       });
     } catch (e) {
-      debugPrint("Error loading users: $e");
+      debugPrint("Chores Error loading users: $e");
     }
   }
 
@@ -86,8 +94,6 @@ class _ToDoListState extends State<ToDoList> {
   DateTime? selectedDate;
   String? selectedUser;
   List<String> _users = []; // List to store available users
-  
-
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +109,7 @@ class _ToDoListState extends State<ToDoList> {
         future: readData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
           } else if (snapshot.hasError) {
@@ -170,12 +176,6 @@ class _ToDoListState extends State<ToDoList> {
                               ],
                             ),
                           ),
-                          // IconButton(
-                          //   icon: Icon(Icons.delete),
-                          //   onPressed: () {
-                          //     _deleteChore(choreId);
-                          //   },
-                          // ),
                           Row(
                             children: [
                               IconButton(
@@ -207,6 +207,9 @@ class _ToDoListState extends State<ToDoList> {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () {
+                  // taskController.clear();
+                  assigneeController.clear();
+                  titleController.clear();
                   _showAddTaskDialog(context);
                 },
                 child: const Text('Add Task'),
@@ -254,22 +257,16 @@ class _ToDoListState extends State<ToDoList> {
                       }).toList(),
                       hint: const Text('Select Assignee'),
                     ),
-
-                    // commenting out until database is fixed, then we should be able to fully delete this
-                    // TextFormField(
-                    //   initialValue: assignee,
-                    //   decoration: const InputDecoration(labelText: 'Assignee'),
-                    //   onChanged: (value) {
-                    //     editedAssignee = value;
-                    //   },
-                    // ),
                     Row(
                       children: [
                         Checkbox(
                           value: autoAssignChecked,
                           onChanged: (bool? value) {
-                            setState(() => autoAssignChecked = value!);
-                          },
+                            setState(() {
+                              autoAssignChecked = value!;
+                              // _getRandomUser().then(selectedUser);
+                            });
+                          }
                         ),
                         const Text('Auto-assign this task'),
                       ],
@@ -331,9 +328,7 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 
-
   void _showAddTaskDialog(BuildContext context) {
-    // bool autoAssignChecked = false;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -371,7 +366,6 @@ class _ToDoListState extends State<ToDoList> {
                   onChanged: (bool? value) {
                     setState(() =>
                       autoAssignChecked = value!);
-                    
                   },
                 ),
                 const Text('Auto-assign this task'),
@@ -422,7 +416,7 @@ class _ToDoListState extends State<ToDoList> {
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
                 if (choreName.isNotEmpty){
-                  if (selectedUser != null){
+                  if (selectedUser != null || autoAssignChecked){
                     _addChoreToFirestoreDrop(choreName, selectedUser, deadline);
                   }
                 //   else if (assignee.isNotEmpty){

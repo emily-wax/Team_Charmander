@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'user_model.dart';
 import 'household_model.dart';
 import 'auto_assign_chores.dart';
-import 'dart:math';
 
 class ToDoList extends StatefulWidget {
   const ToDoList({Key? key}) : super(key: key);
@@ -19,26 +18,25 @@ class _ToDoListState extends State<ToDoList> {
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  // String autoAssignee = "";
 
   // add chore to firestore given an assignee that was selected from a dropdown
   void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
     if (autoAssignChecked){
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
-      // Future<String> autoAssignee = auto.autoAssignChore();
-      // debugPrint("returned from autoAssignChore!!! Auto-Assignee: $autoAssignee");
-      // TODO: Turn autoAssignee into a regular ol' String
       auto.autoAssignChore().then((String result){
         setState(() {
           assignee = result;
+          debugPrint("assignee $assignee");
+          FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
+            'choreName': choreName,
+            'assignee': assignee,
+            'isCompleted': false,
+            'deadline': deadline,
+          });
         });
-      });
-      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
-        'choreName': choreName,
-        'assignee': assignee,
-        'isCompleted': false,
-        'deadline': deadline,
-      });
+      });      
     }
     else {
       FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
@@ -83,7 +81,7 @@ class _ToDoListState extends State<ToDoList> {
           currHouse = HouseholdModel.fromSnapshot(querySnapshot.docs.first);
           _users = currHouse.roommates;
         } else {
-          print('error loading roommates');
+          debugPrint('error loading roommates');
         }
       });
     } catch (e) {
@@ -111,7 +109,7 @@ class _ToDoListState extends State<ToDoList> {
         future: readData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
           } else if (snapshot.hasError) {

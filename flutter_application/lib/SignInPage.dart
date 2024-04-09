@@ -1,23 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart'; // Import the AuthService
+import 'package:firebase_auth/firebase_auth.dart';
 import 'HomePage.dart';
 import 'user_model.dart';
 
 class SignInPage extends StatefulWidget {
-  const SignInPage({super.key});
+  SignInPage({super.key});
+
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   @override
-  _SignInPageState createState() => _SignInPageState();
+  SignInPageState createState() => SignInPageState( firebaseAuth: auth );
+  
 }
 
-class _SignInPageState extends State<SignInPage> {
-  final AuthService authService = AuthService();
+class SignInPageState extends State<SignInPage> {
+  final FirebaseAuth firebaseAuth;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
   bool isSignUp = false;
+
+  SignInPageState( {
+    required this.firebaseAuth
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +113,22 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
+  Future<String?> create_account(String email, String password) async {
+
+    try {
+      
+      await firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
+
+      return 'Success';
+  
+    }  on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      rethrow;
+    }
+
+  }
+
   void _authenticate() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -117,14 +141,14 @@ class _SignInPageState extends State<SignInPage> {
       try {
         if (isSignUp) {
           // Sign Up
-          await authService.signUpWithEmailAndPassword(email, password);
+          create_account(email, password);
           
           // adds user to database when signing up
           _createData(UserModel('0', email, password, ""));
 
         } else {
           // Sign In
-          await authService.signInWithEmailAndPassword(email, password);
+          await firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
         }
 
         // Navigate to HomePage after signing in/up

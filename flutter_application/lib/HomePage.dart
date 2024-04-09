@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
       // For example:
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SignInPage()),
+        MaterialPageRoute(builder: (context) => SignInPage()),
       );
     } catch (e) {
       print('Error logging out: $e');

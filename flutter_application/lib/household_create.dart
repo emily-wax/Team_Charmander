@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_application/household_model.dart';
@@ -8,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class HouseholdCreate extends StatelessWidget{
   @override
+  
 
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -15,29 +17,37 @@ class HouseholdCreate extends StatelessWidget{
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HouseholdCreateForm(),
+      home: HouseholdCreateForm( firestore: FirebaseFirestore.instance, firebaseAuth: FirebaseAuth.instance),
     );
 
   }
 }
 
 class HouseholdCreateForm extends StatefulWidget {
+  final FirebaseAuth firebaseAuth;
+  final FirebaseFirestore firestore;
+
+  HouseholdCreateForm({
+    required this.firebaseAuth,
+    required this.firestore
+  });
+
   @override
-  _HouseholdCreateFormState createState() => _HouseholdCreateFormState();
+  HouseholdCreateFormState createState() => HouseholdCreateFormState();
 }
 
 
-class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
+class HouseholdCreateFormState extends State<HouseholdCreateForm> {
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _countController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
+  TextEditingController countController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
   late User _currentUser;
 
   @override
   void initState() {
     super.initState();
-    _currentUser = FirebaseAuth.instance.currentUser!;
+    _currentUser = widget.firebaseAuth.currentUser!;
   }
 
   @override
@@ -77,7 +87,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
-                controller: _nameController,
+                controller: nameController,
                 decoration: InputDecoration(
                   labelText: 'Household Name',
                 ),
@@ -89,7 +99,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                 },
               ),
               TextFormField(
-                controller: _countController,
+                controller: countController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Maximum Roommate Count',
@@ -102,7 +112,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                 },
               ),
               TextFormField(
-                controller: _passwordController,
+                controller: passwordController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Password',
@@ -121,9 +131,9 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       // Process the data
-                      String name = _nameController.text;
-                      int count = int.parse(_countController.text);
-                      _saveHouseholdToFirebase(name, count, _passwordController.text );
+                      String name = nameController.text;
+                      int count = int.parse(countController.text);
+                      saveHouseholdToFirebase(name, count, passwordController.text );
                     }
                   },
                   child: Text('Submit'),
@@ -136,14 +146,14 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     );
   }
 
-  void _saveHouseholdToFirebase( String name, int count, String password ) async{
+  void saveHouseholdToFirebase( String name, int count, String password ) async{
 
     try{
 
       if( (await doesHouseholdExist(name)) == false ) {
-        DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
+        CollectionReference householdRef = widget.firestore.collection('households');
 
-        await householdRef.set(
+        await householdRef.doc(name).set(
           {
           'name': name,
           'password': password,
@@ -151,9 +161,9 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
           'roommates': [_currentUser.email],
           }
         ).then((_) {
-          _nameController.clear();
-          _countController.clear();      
-          _passwordController.clear();
+          nameController.clear();
+          countController.clear();      
+          passwordController.clear();
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Object submitted successfully'),
           ));
@@ -175,13 +185,34 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
           content: Text('Failed to submit object: $error'),
         ));
     }
+
+  
   } 
+
+Future<bool> doesHouseholdExist(String householdId) async {
+  try {
+    // Create a reference to the document with the given householdId
+    DocumentReference householdRef = widget.firestore.collection('households').doc(householdId);
+
+    // Get the document snapshot
+    DocumentSnapshot snapshot = await householdRef.get();
+
+    // Check if the document exists
+    return snapshot.exists;
+  } catch (error) {
+    // Handle any errors that occur during the process
+    print('Error checking household existence: $error');
+    return false; // Return false if an error occurs
+  }
+}
+
+
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _countController.dispose();
-    _passwordController.dispose();
+    nameController.dispose();
+    countController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 }

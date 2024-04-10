@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
@@ -22,6 +24,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shared Calendar'),
@@ -40,6 +43,7 @@ class _CalendarPageState extends State<CalendarPage> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: _handleAddEvent,
+        backgroundColor: themeProvider.buttonColor,
       ),
     );
   }

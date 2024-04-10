@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'user_model.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);
@@ -35,98 +37,95 @@ class _AppliancesPageState extends State<AppliancesPage> {
             return buildAppliancesPage(); // Build the main content of the page
           }
         },
-    ),
+      ),
     );
   }
 
   Widget buildAppliancesPage() {
-
-      return Container(
-        padding: EdgeInsets.all(8),
-        color: Colors.lightBlue[100],
-        child: Column(
-          children: [
-            Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  var appliances = snapshot.data!.docs;
-                  return GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: appliances.length,
-                    itemBuilder: (context, index) {
-                      var appliance = appliances[index].data();
-                      bool isClaimed = appliance['claimed'] ?? false;
-                      String applianceName = appliances[index].id; // Get the document ID as the appliance name
-                      return Card(
-                        color: Colors.lightBlue[50],
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: isClaimed ? Colors.red : Colors.green,
-                              radius: 30,
-                              child: Icon(
-                                isClaimed ? Icons.clear : Icons.check,
-                                color: Colors.white,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              applianceName,
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center, // Aligns the buttons horizontally to the center
-                              children: [
-                                isClaimed && appliance['claimedBy'] != currUserModel!.email
-                                    ? SizedBox()
-                                    : ElevatedButton(
-                                        onPressed: () {
-                                          if (isClaimed) {
-                                            _unclaimAppliance(appliances[index].id);
-                                          } else {
-                                            _claimAppliance(appliances[index].id);
-                                          }
-                                        },
-                                        child: Text(isClaimed ? 'Unclaim' : 'Claim'),
-                                      ),
-                                IconButton(
-                                  icon: Icon(Icons.delete),
-                                  onPressed: () => _deleteApplianceDialog(context, appliances[index].id),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-
-                    },
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    return Container(
+      padding: EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(
+                    child: CircularProgressIndicator(),
                   );
-                },
-              ),
+                }
+                var appliances = snapshot.data!.docs;
+                return GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: appliances.length,
+                  itemBuilder: (context, index) {
+                    var appliance = appliances[index].data();
+                    bool isClaimed = appliance['claimed'] ?? false;
+                    String applianceName = appliances[index].id; // Get the document ID as the appliance name
+                    return Card(
+                      color: Theme.of(context).cardColor,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: isClaimed ? Theme.of(context).errorColor : Colors.green,
+                            radius: 30,
+                            child: Icon(
+                              isClaimed ? Icons.clear : Icons.check,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            applianceName,
+                            style: Theme.of(context).textTheme.headline6,
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center, // Aligns the buttons horizontally to the center
+                            children: [
+                              isClaimed && appliance['claimedBy'] != currUserModel!.email
+                                  ? SizedBox()
+                                  : ElevatedButton(
+                                      onPressed: () {
+                                        if (isClaimed) {
+                                          _unclaimAppliance(appliances[index].id);
+                                        } else {
+                                          _claimAppliance(appliances[index].id);
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor),
+                                      child: Text(isClaimed ? 'Unclaim' : 'Claim', style: TextStyle(color: themeProvider.textColor)),
+                                    ),
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () => _deleteApplianceDialog(context, appliances[index].id),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-            _buildAddApplianceButton(),
-          ],
-        ),
-      );
+          ),
+          _buildAddApplianceButton(),
+        ],
+      ),
+    );
   }
 
   Widget _buildAddApplianceButton() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return GestureDetector(
       onTap: () {
         _addApplianceDialog(context);
@@ -136,7 +135,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
         height: 60,
         margin: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.blue,
+          color: themeProvider.buttonColor,
           shape: BoxShape.circle,
         ),
         child: Icon(

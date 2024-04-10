@@ -1,7 +1,8 @@
 import 'dart:async';
-
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application/theme_provider.dart';
 import 'user_model.dart';
 
 class PreferenceSlider extends StatefulWidget {
@@ -15,9 +16,12 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
   double _outdoorValue = 0.5;
   double _morningValue = 0.5;
   double _eveningValue = 0.5;
+  bool _darkMode = false;
+  Future<UserModel> currUserModel = readData();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Define the _savePreferences method here
   void _savePreferences() async {
     // Save the preferences to Firestore
     UserModel currUserModel = await readData();
@@ -30,7 +34,8 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           'outdoor': _outdoorValue,
           'morning': _morningValue,
           'evening': _eveningValue,
-        }
+        },
+        'darkMode': _darkMode,
       }, SetOptions(merge: true));
       // print('Preferences saved successfully!');
     } catch (e) {
@@ -40,6 +45,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
   @override
   Widget build(BuildContext context) {
+    // stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -113,6 +119,26 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           divisions: 10, // You can adjust the divisions as needed
           label: 'evening vibes!',
         ),
+        Row(
+        children: [
+        const Text('Dark Mode: '),
+        Switch(
+          value: _darkMode,
+          onChanged: (value) {
+            setState(() {
+              _darkMode = !_darkMode;
+            });
+            _savePreferences();
+            Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // if (value) {
+            //   Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // } else {
+            //   Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // }
+          },
+        ),
+      ],
+      ),
       ],
     );
   }

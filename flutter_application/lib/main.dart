@@ -5,6 +5,7 @@ import 'auth_service.dart';
 import 'HomePage.dart';
 import 'SignInPage.dart';
 import 'calendar_page.dart'; // Import the CalendarPage
+import 'theme_provider.dart';
 
 final FirebaseOptions firebaseOptions = FirebaseOptions(
   apiKey: "AIzaSyC_5CMA0uX6Dw8PLvlJs4Y8hzFU1bayZtg",
@@ -24,23 +25,30 @@ Future main() async {
   AuthService authService = AuthService();
   bool isUserSignedIn = await authService.isUserSignedIn();
 
-  runApp(MyApp(true, isUserSignedIn: isUserSignedIn,));
+  runApp(MyApp(
+    isUserSignedIn: isUserSignedIn,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final bool isUserSignedIn;
 
-  MyApp(bool bool, {required this.isUserSignedIn});
+  MyApp({required this.isUserSignedIn});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'House App',
-      theme: ThemeData(
-        primarySwatch: Colors.brown,
+    return ChangeNotifierProvider(
+      create: (context) => ThemeProvider(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'House App',
+            theme: themeProvider.selectedTheme,
+            // Use the HomePage or SignInPage based on the user's sign-in status
+            home: isUserSignedIn ? HomePage() : SignInPage(),
+          );
+        },
       ),
-      // Use the HomePage or SignInPage based on the user's sign-in status
-      home: isUserSignedIn ? HomePage() : SignInPage(),
     );
   }
 }

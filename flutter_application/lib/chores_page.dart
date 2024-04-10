@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_model.dart';
 import 'household_model.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class ToDoList extends StatefulWidget {
   const ToDoList({Key? key}) : super(key: key);
@@ -112,112 +114,99 @@ class _ToDoListState extends State<ToDoList> {
             );
           } else {
             currUserModel = snapshot.data; // Set currUserModel once future completes
-            return buildChoresPage(); // Build the main content of the page
+            return buildChoresPage(context); // Build the main content of the page
           }
         },
       ), 
     );
   }
 
-  Widget buildChoresPage() {
-    return Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                  var chores = snapshot.data!.docs;
-                  List<Widget> choreWidgets = [];
+  Widget buildChoresPage(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+  return Column(
+    children: [
+      Expanded(
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            var chores = snapshot.data!.docs;
+            return ListView.builder(
+              itemCount: chores.length,
+              itemBuilder: (context, index) {
+                var choreData = chores[index].data() as Map<String, dynamic>;
+                var choreId = chores[index].id;
+                var choreName = choreData['choreName'];
+                var assignee = choreData['assignee'];
+                var isCompleted = choreData['isCompleted'];
+                var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
 
-                  for (var c in chores) {
-                    var choreData = c.data() as Map<String, dynamic>;
-                    var choreId = c.id;
-                    var choreName = choreData['choreName'];
-                    var assignee = choreData['assignee'];
-                    var isCompleted = choreData['isCompleted'];
-                    var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
-
-                    var choreWidget = ListTile(
-                      contentPadding: const EdgeInsets.all(0), // Remove default padding
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Checkbox(
-                            value: isCompleted,
-                            onChanged: (value) {
-                              // choresCollection.doc(choreId).update({'isCompleted': value});
-                               FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
-                            },
-                          ),
-                          const SizedBox(width: 8), // Add some spacing between checkbox and task details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Task: $choreName',
-                                  style: TextStyle(
-                                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                                  ),
-                                ),
-                                Text('Assignee: $assignee'),
-                                if (deadline != null) Text('Deadline: $deadline'),
-                              ],
-                            ),
-                          ),
-                          // IconButton(
-                          //   icon: Icon(Icons.delete),
-                          //   onPressed: () {
-                          //     _deleteChore(choreId);
-                          //   },
-                          // ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  _editChore(choreName, choreId, assignee, deadline);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteChore(choreId);
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  child: ListTile(
+                    leading: Checkbox(
+                      value: isCompleted,
+                      onChanged: (value) {
+                        FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
+                      },
+                      activeColor: Color.fromARGB(255, 8, 174, 245)
+                    ),
+                    title: Text(
+                      'Task: $choreName',
+                      style: TextStyle(
+                        decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none, 
                       ),
-                    );
-                    choreWidgets.add(choreWidget);
-                  }
-                  return ListView(
-                    children: choreWidgets,
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  _showAddTaskDialog(context);
-                },
-                child: const Text('Add Task'),
-              ),
-            ),
-          ],
-        );
-   
-  }
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Assignee: $assignee'),
+                        if (deadline != null) Text('Deadline: $deadline'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () {
+                            _editChore(choreName, choreId, assignee, deadline, context);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            _deleteChore(choreId);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ElevatedButton(
+          onPressed: () {
+            _showAddTaskDialog(context);
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor),
+          child: Text('Add Task', style: TextStyle(color: themeProvider.textColor)),
+        ),
+      ),
+    ],
+  );
+}
 
-  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {
+  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline, BuildContext context) {
     String editedChoreName = choreName;
     String editedAssignee = assignee;
 

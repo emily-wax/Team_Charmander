@@ -50,12 +50,29 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
+    if (autoAssignChecked) {
+      debugPrint("Auto Assign checked!");
+      AutoAssignClass auto = AutoAssignClass();
+      auto.autoAssignChore(choreName).then((String result) {
+        setState(() {
+          assignee = result;
+          debugPrint("assignee $assignee");
+          FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
+          'choreName': choreName,
+          'assignee': assignee,
+          'deadline': deadline,
+          });
+        });
+      });
+    }
+    else{
+      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
         'choreName': choreName,
         'assignee': assignee,
         'deadline': deadline,
       });
     }
+  }
 
   void _deleteChore(String choreId) {
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
@@ -222,7 +239,7 @@ class _ToDoListState extends State<ToDoList> {
 
   void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {
     String editedChoreName = choreName;
-    String editedAssignee = assignee;
+    String? editedAssignee = assignee;
 
     showDialog(
       context: context,
@@ -243,10 +260,10 @@ class _ToDoListState extends State<ToDoList> {
                       },
                     ),
                     DropdownButtonFormField<String>(
-                      value: selectedUser,
+                      value: editedAssignee,
                       onChanged: (value) {
                         setState(() {
-                          selectedUser = value;
+                          editedAssignee = value;
                         });
                       },
                       items: _users.map((String user) {
@@ -309,7 +326,18 @@ class _ToDoListState extends State<ToDoList> {
                     Timestamp? deadline = selectedDate != null
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
-                    _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+                    // _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+
+                    if (editedChoreName.isNotEmpty) {
+                      if (editedAssignee != null || autoAssignChecked) {
+                         _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+                      }
+                      //   else if (assignee.isNotEmpty){
+                      //      _addChoreToFirestore(choreName, assignee, deadline);
+                      //   }
+                    }
+
+
                   },
                   child: const Text('Save'),
                 ),

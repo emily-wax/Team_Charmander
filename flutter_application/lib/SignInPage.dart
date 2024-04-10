@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
-import 'dart:math';
+import 'user_model.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -105,19 +105,7 @@ class _SignInPageState extends State<SignInPage> {
     );
   }
 
-String generateRandomColorString() {
-  final random = Random();
-  // Generate random values for red, green, and blue components
-  int red = random.nextInt(256); // Random value between 0 and 255
-  int green = random.nextInt(256);
-  int blue = random.nextInt(256);
-  // Convert the RGB values to hexadecimal string representation
-  String redHex = red.toRadixString(16).padLeft(2, '0'); // Ensure two digits
-  String greenHex = green.toRadixString(16).padLeft(2, '0');
-  String blueHex = blue.toRadixString(16).padLeft(2, '0');
-  // Concatenate the hexadecimal values to form the color string
-  return '0xFF$redHex$greenHex$blueHex';
-}
+
 
   void _authenticate() async {
     if (_formKey.currentState!.validate()) {
@@ -134,8 +122,7 @@ String generateRandomColorString() {
           await authService.signUpWithEmailAndPassword(email, password);
           
           // adds user to database when signing up
-
-          _createData(UserModel('0', email, password, generateRandomColorString()));
+          _createData(UserModel('0', email, password, "", {'cleaner': 0.5, 'evening': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
 
         } else {
           // Sign In
@@ -175,38 +162,10 @@ String generateRandomColorString() {
         id,
         userModel.email, 
         userModel.password,
-        userModel.color
+        userModel.currHouse,
+        userModel.preferences
       ).toJson();
 
       userCollection.doc(id).set(newUser);
-  }
-}
-
-// User model: could be put in a different file in the future but for now is here
-
-class UserModel{
-  final String? email;
-  final String? password;
-  final String? id;
-  final String? color;
-
-  UserModel( this.id, this.email, this.password, this.color);
-
-  static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
-    return UserModel(
-      snapshot['id'], 
-      snapshot['email'], 
-      snapshot['password'],
-      snapshot['color']
-    );
-  }
-
-  Map<String, dynamic> toJson(){
-    return{
-      "id": id,
-      "email": email,
-      "password": password,
-      "color": color
-    };
   }
 }

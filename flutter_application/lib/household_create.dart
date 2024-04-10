@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'SignInPage.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_application/household_model.dart';
+import 'HomePage.dart';
+import 'account_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 class HouseholdCreate extends StatelessWidget{
   @override
@@ -29,6 +31,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _countController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
   late User _currentUser;
 
   @override
@@ -42,6 +45,29 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Household Creation Form'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home),
+            onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+            },
+          ),
+          Tooltip(
+            message: 'Account Page',
+            child: IconButton(
+              icon: const Icon(Icons.account_circle_sharp),
+              onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AccountPage()),
+                  );
+              },
+            ),
+          )
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -75,6 +101,20 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                   return null;
                 },
               ),
+              TextFormField(
+                controller: _passwordController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  helperText: 'This is used to control who can join your household',
+                ),
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return 'Please enter a password for your household';
+                  }
+                  return null;
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
@@ -83,7 +123,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                       // Process the data
                       String name = _nameController.text;
                       int count = int.parse(_countController.text);
-                      _saveHouseholdToFirebase(name, count);
+                      _saveHouseholdToFirebase(name, count, _passwordController.text );
                     }
                   },
                   child: Text('Submit'),
@@ -96,29 +136,52 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
     );
   }
 
-  void _saveHouseholdToFirebase( String name, int count ){
-    FirebaseFirestore.instance.collection('households').add({
-      'name': name,
-      'max_roommate_count': count,
-      'roommates': [_currentUser.email],
-    }).then((_) {
-      // Clear the text fields after successful submission
-      _nameController.clear();
-      _countController.clear();
+  void _saveHouseholdToFirebase( String name, int count, String password ) async{
+
+    try{
+
+      if( (await doesHouseholdExist(name)) == false ) {
+        DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
+
+        await householdRef.set(
+          {
+          'name': name,
+          'password': password,
+          'max_roommate_count': count,
+          'roommates': [_currentUser.email],
+          }
+        ).then((_) {
+          _nameController.clear();
+          _countController.clear();      
+          _passwordController.clear();
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Object submitted successfully'),
+          ));
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AccountPage()),
+          );
+        });
+
+      } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Household name already exists. Please enter unique household name.'),
+          ));
+      }
+      // create reference to household
+    } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Object submitted successfully'),
-      ));
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to submit object: $error'),
-      ));
-    });
-  }
+          content: Text('Failed to submit object: $error'),
+        ));
+    }
+  } 
 
   @override
   void dispose() {
     _nameController.dispose();
     _countController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

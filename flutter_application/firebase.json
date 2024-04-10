@@ -19,6 +19,13 @@
     }
   ],
   "hosting": {
+    "headers": [{
+            "source": "**",
+            "headers": [{
+                "key": "Cache-Control",
+                "value": "max-age=300"
+            }]
+        }],
     "public": "build/web",
     "ignore": [
       "firebase.json",

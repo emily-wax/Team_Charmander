@@ -46,6 +46,8 @@ class _ToDoListState extends State<ToDoList> {
         'deadline': deadline,
       });
     }
+    selectedUser = null;
+    selectedDate = null;
     
   }
 

@@ -99,6 +99,7 @@ class _ToDoListState extends State<ToDoList> {
         if(querySnapshot.docs.isNotEmpty){
           currHouse = HouseholdModel.fromSnapshot(querySnapshot.docs.first);
           _users = currHouse.roommates;
+          _users.add('[unassigned]');
         } else {
           debugPrint('error loading roommates');
         }
@@ -324,7 +325,6 @@ class _ToDoListState extends State<ToDoList> {
                 ElevatedButton(
                   onPressed: () {
                     // Save the edited chore details and close the dialog
-                    Navigator.of(context).pop();
                     Timestamp? deadline = selectedDate != null
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
@@ -332,11 +332,9 @@ class _ToDoListState extends State<ToDoList> {
 
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
-                         _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+                        Navigator.of(context).pop();
                       }
-                      //   else if (assignee.isNotEmpty){
-                      //      _addChoreToFirestore(choreName, assignee, deadline);
-                      //   }
                     }
 
 
@@ -447,14 +445,11 @@ class _ToDoListState extends State<ToDoList> {
 
                 if (choreName.isNotEmpty){
                   if (selectedUser != null || autoAssignChecked){
-                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);
+                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);Navigator.of(context).pop();
                   }
-                //   else if (assignee.isNotEmpty){
-                //      _addChoreToFirestore(choreName, assignee, deadline);
-                //   }
                 }
 
-                Navigator.of(context).pop();
+                
               },
               child: const Text('Add'),
             ),

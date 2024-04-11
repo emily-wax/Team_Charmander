@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth for user authentication
+import 'user_model.dart';
+import 'package:flutter_application/household_model.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
@@ -13,11 +17,22 @@ class _CalendarPageState extends State<CalendarPage> {
   final CalendarController _calendarController = CalendarController();
   final TextEditingController _eventNameController = TextEditingController();
 
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
+
+  final EventDataSource _eventDataSource = EventDataSource([]);
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  String _householdId = ""; // Variable to store the household ID
+
   @override
   void initState() {
     super.initState();
     _calendarView = CalendarView.day;
-    _updateDisplayDate(); // Call the method to set the initial display
+    _updateDisplayDate();
+    _getHouseholdId(); // Fetch household ID when widget initializes
+   
   }
 
   @override
@@ -26,16 +41,53 @@ class _CalendarPageState extends State<CalendarPage> {
       appBar: AppBar(
         title: const Text('Shared Calendar'),
       ),
-      body: SfCalendar(
-        view: _calendarView,
-        controller: _calendarController,
-        dataSource: _getCalendarDataSource(),
-        onViewChanged: _onViewChanged,
-        timeSlotViewSettings: const TimeSlotViewSettings(
-          startHour: 0,
-          endHour: 24, // Set the end hour to 24 to show a full day
-          timeIntervalHeight: 27.5, // Adjust height to fit the entire day
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('households')
+                  .doc(_householdId) // Use the household ID obtained from Firestore
+                  .collection('events')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                final events = snapshot.data!.docs;
+                List<Widget> eventWidgets = [];
+
+                for (var event in events) {
+                  var eventData = event.data() as Map<String, dynamic>;
+                  var startTime = eventData['start'].toDate(); // Convert Firestore Timestamp to DateTime
+                  var endTime = eventData['end'].toDate(); // Convert Firestore Timestamp to DateTime
+                  var eventName = eventData['name'];
+
+                  var eventWidget = ListTile(
+                    title: Text(eventName),
+                    subtitle: Text('Start: $startTime | End: $endTime'),
+                    // Add more details or customize the appearance of the event widget as needed
+                  );
+                  eventWidgets.add(eventWidget);
+                }
+
+                return ListView(
+                  children: eventWidgets,
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              onPressed: _handleAddEvent,
+              child: const Text('Add Event'),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
@@ -44,29 +96,62 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  Future<void> _getHouseholdId() async {
+    UserModel currUserModel = await readData();
+    if(currUserModel.id != null){
+      HouseholdModel currHouseModel = HouseholdModel.fromSnapshot(
+          await FirebaseFirestore.instance
+              .collection('households')
+              .doc(currUserModel.currHouse)
+              .get());
+
+      _householdId = currHouseModel.name;
+    }
+  }
+
   void _handleAddEvent() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        String? eventName;
+
         return AlertDialog(
           title: const Text('Add Event'),
-          content: TextFormField(
-            controller: _eventNameController,
-            decoration: const InputDecoration(labelText: 'Event Name'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _eventNameController,
+                decoration: const InputDecoration(labelText: 'Event Name'),
+                onChanged: (value) => eventName = value,
+              ),
+              const SizedBox(height: 16.0),
+              // Time selection widgets...
+            ],
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('Cancel'),
-            ),
+            // Cancel button...
             ElevatedButton(
-              onPressed: () {
-                // Add the event to the calendar using the CalendarController
-                // For demonstration purposes, let's print the event name to the console
-                print('Event added: ${_eventNameController.text}');
-                Navigator.of(context).pop(); // Close the dialog
+              onPressed: () async {
+                if (eventName != null && _startTime != null && _endTime != null) {
+                  final selectedDate = _calendarController.selectedDate;
+                  if (selectedDate != null) {
+                    UserModel currUserModel = await readData();
+                    final event = {
+                      'name': eventName,
+                      'start': _startTime!.format(context),
+                      'end': _endTime!.format(context),
+                      'user': currUserModel.email, // Placeholder for user name, replace with actual user name
+                    };
+
+                    await _firestore
+                        .collection('households')
+                        .doc(_householdId) // Use the household ID obtained from Firestore
+                        .collection('Events')
+                        .add(event);
+                  }
+                }
+                Navigator.of(context).pop();
               },
               child: const Text('Add'),
             ),
@@ -76,14 +161,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  _DataSource _getCalendarDataSource() {
-    List<Appointment> appointments = <Appointment>[];
-    return _DataSource(appointments);
-  }
-
-  void _onViewChanged(ViewChangedDetails viewChangedDetails) {
-    // No need to handle the view change in this method
-  }
 
   void _updateDisplayDate() {
     final now = DateTime.now();
@@ -98,8 +175,8 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 }
 
-class _DataSource extends CalendarDataSource {
-  _DataSource(List<Appointment> source) {
+class EventDataSource extends CalendarDataSource {
+  EventDataSource(List<Appointment> source) {
     appointments = source;
   }
 }

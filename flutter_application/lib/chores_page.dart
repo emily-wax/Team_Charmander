@@ -80,6 +80,21 @@ class _ToDoListState extends State<ToDoList> {
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
   }
 
+  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser) {
+    debugPrint("reassignment in progress");
+    FirebaseFirestore.instance
+        .collection('households')
+        .doc(currUserModel!.currHouse)
+        .collection('chores')
+        .doc(choreId)
+        .update({
+      'choreName': choreName,
+      'assignee': newAssigneeUser,
+      'deadline': deadline,
+    });
+    debugPrint("reassignment done!");
+  }
+
   @override
   void initState() {
     super.initState();
@@ -199,6 +214,12 @@ class _ToDoListState extends State<ToDoList> {
                           Row(
                             children: [
                               IconButton(
+                                icon: const Icon(Icons.shopping_cart_rounded),
+                                onPressed: () {
+                                  _reassignChoreOnClaim(choreName, choreId, assignee, deadline, currUserModel!.email);
+                                }
+                              ),
+                              IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () {
                                   _editChore(choreName, choreId, assignee, deadline);
@@ -289,6 +310,12 @@ class _ToDoListState extends State<ToDoList> {
                           }
                         ),
                         const Text('Auto-assign this task'),
+                        IconButton(
+                          icon: const Icon(Icons.question_mark),
+                          onPressed: () {
+                            _showAutoAssignDialog(context);
+                          },
+                        )
                       ],
                     ),
                     Row(
@@ -397,6 +424,12 @@ class _ToDoListState extends State<ToDoList> {
                   },
                 ),
                 const Text('Auto-assign this task'),
+                IconButton(
+                        icon: const Icon(Icons.question_mark),
+                        onPressed: () {
+                          _showAutoAssignDialog(context);
+                        },
+                      )
               ],
             ),
             Row(
@@ -458,5 +491,33 @@ class _ToDoListState extends State<ToDoList> {
       },
     );
   }
+
+  void _showAutoAssignDialog(BuildContext context){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Auto-Assign has 3 phases.'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+          // return const Text("Phase 1: 'Same # tasks?' The app assigns [task] to the roommate with the lowest number of assignments. Phase 2: 'Modified Adjusted Winner' This envy-free item allocation algorithm uses the users' preferences (set in Account) to assign each roommate a preferred chore category, breaking ties when needed. Plus, every roommate is guaranteed a preferred category. Phase 3: 'Fail-Safe' When phases 1 and 2 don't return a conclusive decision, [task] is assigned to a roommate at random.");
+          return RichText(
+            text: const TextSpan(
+              children: [
+                TextSpan(text: '1. Assigns to the roommate with the least chores assigned.\n'),
+                TextSpan(text: '2. A modified Adjusted Winner procedure assigns to the "winner" of [chore]\'s category based on their set preferences.\n'),
+                TextSpan(text: '3. A fail-safe assigns to a roommate at random.\n\n'),
+                TextSpan(text: 'A phase executes if the previous phase does not return a decisive roommate.\n'),
+                TextSpan(text: "More information about the Adjusted Winner procedure can be found online.")
+              ],
+            ),
+          );
+            },
+          ),
+        );
+  }
+    );
+      
+}
 }
                 

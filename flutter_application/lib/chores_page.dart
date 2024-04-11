@@ -161,6 +161,7 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   Widget buildChoresPage() {
+    String formattedDate = "";
     return Column(
         children: [
           Expanded(
@@ -182,6 +183,11 @@ class _ToDoListState extends State<ToDoList> {
                     var assignee = choreData['assignee'];
                     var isCompleted = choreData['isCompleted'];
                     var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
+
+                    if (deadline != null){
+                      formattedDate =
+                      '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+                    }
 
                     var choreWidget = ListTile(
                       contentPadding: const EdgeInsets.all(0), // Remove default padding
@@ -207,7 +213,8 @@ class _ToDoListState extends State<ToDoList> {
                                   ),
                                 ),
                                 Text('Assignee: $assignee'),
-                                if (deadline != null) Text('Deadline: $deadline'),
+                                if (deadline != null) Text('Deadline: $formattedDate'),
+                                
                               ],
                             ),
                           ),

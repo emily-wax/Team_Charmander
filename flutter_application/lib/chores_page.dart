@@ -13,14 +13,11 @@ class ToDoList extends StatefulWidget {
 }
 
 class _ToDoListState extends State<ToDoList> {
-  // TextEditingController taskController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // String autoAssignee = "";
 
-  // add chore to firestore given an assignee that was selected from a dropdown
   void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
     if (autoAssignChecked){
       debugPrint("Auto Assign checked!");
@@ -98,7 +95,7 @@ class _ToDoListState extends State<ToDoList> {
   @override
   void initState() {
     super.initState();
-    _loadRoommates(); // Load users from Firestore when the dialog is initialized
+    _loadRoommates();
   }
 
   Future<void> _loadRoommates() async {
@@ -128,7 +125,7 @@ class _ToDoListState extends State<ToDoList> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
-  List<String> _users = []; // List to store available users
+  List<String> _users = [];
 
   @override
   Widget build(BuildContext context) {
@@ -136,9 +133,6 @@ class _ToDoListState extends State<ToDoList> {
       appBar: AppBar(
         title: const Text('To-Do List'),
       ),
-      // body: Container(
-      //   padding: const EdgeInsets.all(8),
-      //   color: Colors.purple[100],
 
       body: FutureBuilder<UserModel>(
         future: readData(),
@@ -152,8 +146,8 @@ class _ToDoListState extends State<ToDoList> {
               child: Text('Error: ${snapshot.error}'),
             );
           } else {
-            currUserModel = snapshot.data; // Set currUserModel once future completes
-            return buildChoresPage(); // Build the main content of the page
+            currUserModel = snapshot.data;
+            return buildChoresPage(); 
           }
         },
       ), 
@@ -191,7 +185,6 @@ class _ToDoListState extends State<ToDoList> {
                     }
 
                     if (assignee == currUserModel!.email){
-                      // debugPrint("Interesting $choreName");
                       assigneeMatchesCurrUser = true;
                     }
                     else {
@@ -199,7 +192,7 @@ class _ToDoListState extends State<ToDoList> {
                     }
 
                     var choreWidget = ListTile(
-                      contentPadding: const EdgeInsets.all(0), // Remove default padding
+                      contentPadding: const EdgeInsets.all(0),
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -209,7 +202,7 @@ class _ToDoListState extends State<ToDoList> {
                                FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
                             },
                           ),
-                          const SizedBox(width: 8), // Add some spacing between checkbox and task details
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +259,6 @@ class _ToDoListState extends State<ToDoList> {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () {
-                  // taskController.clear();
                   assigneeController.clear();
                   titleController.clear();
                   _showAddTaskDialog(context);
@@ -323,7 +315,6 @@ class _ToDoListState extends State<ToDoList> {
                           onChanged: (bool? value) {
                             setState(() {
                               autoAssignChecked = value!;
-                              // _getRandomUser().then(selectedUser);
                             });
                           }
                         ),
@@ -369,11 +360,9 @@ class _ToDoListState extends State<ToDoList> {
               actions: [
                 ElevatedButton(
                   onPressed: () {
-                    // Save the edited chore details and close the dialog
                     Timestamp? deadline = selectedDate != null
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
-                    // _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
 
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
@@ -388,7 +377,6 @@ class _ToDoListState extends State<ToDoList> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Close the dialog without saving
                     Navigator.of(context).pop();
                   },
                   child: const Text('Cancel'),
@@ -491,7 +479,6 @@ class _ToDoListState extends State<ToDoList> {
             TextButton(
               onPressed: () {
                 String choreName = titleController.text.trim();
-                // String assignee = assigneeController.text.trim();
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
                 if (choreName.isNotEmpty){
@@ -518,7 +505,6 @@ class _ToDoListState extends State<ToDoList> {
           title: const Text('Auto-Assign has 3 phases.'),
           content: StatefulBuilder(
             builder: (context, setState) {
-          // return const Text("Phase 1: 'Same # tasks?' The app assigns [task] to the roommate with the lowest number of assignments. Phase 2: 'Modified Adjusted Winner' This envy-free item allocation algorithm uses the users' preferences (set in Account) to assign each roommate a preferred chore category, breaking ties when needed. Plus, every roommate is guaranteed a preferred category. Phase 3: 'Fail-Safe' When phases 1 and 2 don't return a conclusive decision, [task] is assigned to a roommate at random.");
           return RichText(
             text: const TextSpan(
               children: [

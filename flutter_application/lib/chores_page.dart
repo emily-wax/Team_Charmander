@@ -162,6 +162,7 @@ class _ToDoListState extends State<ToDoList> {
 
   Widget buildChoresPage() {
     String formattedDate = "";
+    bool assigneeMatchesCurrUser = false;
     return Column(
         children: [
           Expanded(
@@ -189,6 +190,14 @@ class _ToDoListState extends State<ToDoList> {
                       '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
                     }
 
+                    if (assignee == currUserModel!.email){
+                      // debugPrint("Interesting $choreName");
+                      assigneeMatchesCurrUser = true;
+                    }
+                    else {
+                      assigneeMatchesCurrUser = false;
+                    }
+
                     var choreWidget = ListTile(
                       contentPadding: const EdgeInsets.all(0), // Remove default padding
                       title: Row(
@@ -197,7 +206,6 @@ class _ToDoListState extends State<ToDoList> {
                           Checkbox(
                             value: isCompleted,
                             onChanged: (value) {
-                              // choresCollection.doc(choreId).update({'isCompleted': value});
                                FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
                             },
                           ),
@@ -220,12 +228,15 @@ class _ToDoListState extends State<ToDoList> {
                           ),
                           Row(
                             children: [
-                              IconButton(
+                              if (assigneeMatchesCurrUser)
+                                IconButton(
                                 icon: const Icon(Icons.shopping_cart_rounded),
                                 onPressed: () {
                                   _reassignChoreOnClaim(choreName, choreId, assignee, deadline, currUserModel!.email);
                                 }
                               ),
+                              
+                              
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () {

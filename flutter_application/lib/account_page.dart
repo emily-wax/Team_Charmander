@@ -1,5 +1,3 @@
-import 'dart:js_interop_unsafe';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'household_create.dart';
@@ -11,6 +9,8 @@ import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 // TODO: add a password for joining the house
 // TODO: create a back home button
@@ -27,12 +27,8 @@ class _AccountPageState extends State<AccountPage> {
   String selectedTidy = 'Cleaner';
   String selectedTimeOfDay = 'Early Riser';
   String selectedButton = "";
-  bool isFirstButtonGreen = false;
-  bool isSecondButtonGreen = false;
-  final ValueNotifier<bool> isFirstButtonGreenVN = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> isSecondButtonGreenVN = ValueNotifier<bool>(false);
-  bool isPressed = false;
-  double _prefValue = 0.0;
+  double prefSum = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +47,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
     await documentReference.set({'currHouse': householdName}, SetOptions(merge: true));
   } else {
-    print(' not added ');
+    debugPrint(' not added ');
   }
 
 }
@@ -147,6 +143,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
@@ -180,8 +177,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                       return Column(
                         children: [
                           Text(user.email!),
-                          SizedBox(height: 20),
-                          // TODO: preferences here
+                          const SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: () {
                               showDialog(
@@ -199,7 +195,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                           Navigator.of(context).pop();
                                         },
                                         child: Text('Done', style: TextStyle(color: Colors.white)),
-                                        style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor)
+                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                                       ),
                                     ],
                                   ),
@@ -209,7 +205,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                               );
                             },
                             child: Text('Set Preferences', style: TextStyle(color: Colors.white)),
-                            style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor)
+                            style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                           ),
 
                           Text('User Household:'),
@@ -256,9 +252,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Create a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
-                  style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor)
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
               SizedBox(height: 20),
@@ -273,9 +269,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Join a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
-                  style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor)
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
             ])),

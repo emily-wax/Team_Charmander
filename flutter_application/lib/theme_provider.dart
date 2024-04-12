@@ -6,9 +6,11 @@ class ThemeProvider extends ChangeNotifier {
   late ThemeData _selectedTheme; // Selected theme
   Color buttonColor = Color.fromARGB(255, 8, 174, 245);
   Color textColor = Colors.white;
+  Color inputColor = Colors.black;
 
   ThemeProvider() {
     _selectedTheme = fetchLightTheme(); // Set default theme
+    inputColor = Colors.black;
     _initializeTheme(); // Initialize theme based on user preference
   }
 
@@ -21,8 +23,11 @@ class ThemeProvider extends ChangeNotifier {
     DocumentSnapshot<Map<String, dynamic>> documentSnapshot =
         await _firestore.collection('users').doc(currUserModel.id).get();
 
-    var darkMode = documentSnapshot.data()?['darkMode'];
+    var darkMode = documentSnapshot['darkMode'];
     _selectedTheme = darkMode ?? false ? fetchDarkTheme() : fetchLightTheme();
+    if (_selectedTheme == fetchDarkTheme()) {
+      inputColor = Colors.white;
+    }
   } catch (e) {
     print('Error initializing theme: $e');
     // In case of error, use the default light theme
@@ -35,6 +40,11 @@ class ThemeProvider extends ChangeNotifier {
   void toggleTheme() {
     _selectedTheme =
         _selectedTheme == fetchLightTheme() ? fetchDarkTheme() : fetchLightTheme();
+    if (_selectedTheme == fetchDarkTheme()) {
+      inputColor = Colors.white;
+    } else {
+      inputColor = Colors.black;
+    }
     notifyListeners(); // Notify listeners to update UI with the new theme
   }
 

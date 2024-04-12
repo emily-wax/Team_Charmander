@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'theme_provider.dart'; // Import your themes file
 import 'package:provider/provider.dart';
 
+
 class HomePage extends StatelessWidget {
   const HomePage({Key? key});
 
@@ -29,8 +30,6 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    ThemeData theme = themeProvider.selectedTheme;
-    // themeProvider._initializeTheme();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Welcome Home'),
@@ -135,4 +134,8 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+}
+
+void addTheme() {
+  
 }

@@ -4,6 +4,8 @@ import 'user_model.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
+ThemeProvider theme = ThemeProvider();
+
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);
 
@@ -43,6 +45,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
 
   Widget buildAppliancesPage() {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Container(
       padding: EdgeInsets.all(8),
       child: Column(
@@ -154,24 +157,30 @@ class _AppliancesPageState extends State<AppliancesPage> {
         return AlertDialog(
           title: Text('Add Appliance'),
           content: TextField(
+            cursorColor: theme.buttonColor,
             controller: _applianceNameController,
             decoration: InputDecoration(
               hintText: 'Enter appliance name',
+              focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  ),
             ),
           ),
           actions: <Widget>[
             TextButton(
+              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: theme.textColor)),
             ),
             TextButton(
+              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 _addAppliance(_applianceNameController.text);
                 Navigator.of(context).pop();
               },
-              child: Text('Add'),
+              child: Text('Add', style: TextStyle(color: theme.textColor)),
             ),
           ],
         );
@@ -188,17 +197,19 @@ class _AppliancesPageState extends State<AppliancesPage> {
         content: Text('Are you sure you want to delete this appliance?'),
         actions: <Widget>[
           TextButton(
+            style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: theme.textColor)),
           ),
           TextButton(
+            style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
             onPressed: () {
               _deleteAppliance(applianceId);
               Navigator.of(context).pop();
             },
-            child: Text('Delete'),
+            child: Text('Delete', style: TextStyle(color: theme.textColor)),
           ),
         ],
       );

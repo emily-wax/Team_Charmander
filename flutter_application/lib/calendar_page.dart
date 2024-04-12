@@ -3,6 +3,8 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
+ThemeProvider theme = ThemeProvider();
+
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
 
@@ -25,6 +27,7 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shared Calendar'),
@@ -41,7 +44,7 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
         onPressed: _handleAddEvent,
         backgroundColor: themeProvider.buttonColor,
       ),
@@ -55,24 +58,33 @@ class _CalendarPageState extends State<CalendarPage> {
         return AlertDialog(
           title: const Text('Add Event'),
           content: TextFormField(
+            cursorColor: theme.buttonColor,
             controller: _eventNameController,
-            decoration: const InputDecoration(labelText: 'Event Name'),
+            decoration: InputDecoration(
+              labelText: 'Event Name',focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: theme.buttonColor),    // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: theme.buttonColor),),
           ),
+          
           actions: [
             TextButton(
+              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: theme.textColor),),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 // Add the event to the calendar using the CalendarController
                 // For demonstration purposes, let's print the event name to the console
                 print('Event added: ${_eventNameController.text}');
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('Add'),
+              child: Text('Add', style: TextStyle(color: theme.textColor),),
             ),
           ],
         );

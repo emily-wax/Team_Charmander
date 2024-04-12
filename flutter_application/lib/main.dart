@@ -35,12 +35,15 @@ class MyApp extends StatelessWidget {
 
   MyApp({required this.isUserSignedIn});
 
-  @override
+   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider.value(value: isUserSignedIn),
+      ],
+      child: Consumer2<ThemeProvider, bool>(
+        builder: (context, themeProvider, isUserSignedIn, _) {
           return MaterialApp(
             title: 'House App',
             theme: themeProvider.selectedTheme,

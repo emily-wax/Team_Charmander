@@ -3,18 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class UserModel{
   final String? email;
-  final String? password;
   final String? id;
   final String? currHouse;
   final Map? preferences;
 
-  UserModel( this.id, this.email, this.password, this.currHouse, this.preferences );
+  UserModel( this.id, this.email, this.currHouse, this.preferences );
 
   static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
     return UserModel(
       snapshot['id'], 
       snapshot['email'], 
-      snapshot['password'],
       snapshot['currHouse'],
       snapshot['slider-prefs']
     );
@@ -24,7 +22,6 @@ class UserModel{
     return{
       "id": id,
       "email": email,
-      "password": password,
       "currHouse": currHouse,
       "slider-prefs": preferences
     };

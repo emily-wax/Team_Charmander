@@ -397,7 +397,7 @@ class _ToDoListState extends State<ToDoList> {
                         child: Text(value),
                       );
                     }).toList(),
-                    hint: const Text('Select Time Estimate (min.)'),
+                    hint: const Text('Select Time Est. (default 15min)'),
                   ),
                 ],
               ),
@@ -530,7 +530,7 @@ class _ToDoListState extends State<ToDoList> {
                         child: Text(value),
                       );
                     }).toList(),
-                    hint: const Text('Select Time Estimate (min.)'),
+                    hint: const Text('Select Time Est. (default 15min)'),
                   ),
                 ],
               ),

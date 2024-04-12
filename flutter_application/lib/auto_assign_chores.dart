@@ -31,7 +31,7 @@ class AutoAssignClass extends StatefulWidget {
     // Iterate through each roommate's email address
     for (String email in existingRoommates) {
       // Fetch the user document corresponding to the email address
-      debugPrint("email to try to pref is $email");
+      // debugPrint("email to try to pref is $email");
       try {
         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('users')
@@ -48,28 +48,36 @@ class AutoAssignClass extends StatefulWidget {
     }
 
     // PHASE 1: Determine if all roomies are assigned an equal number of chores. If yes, good. If no, assign to whoever has the lowest number of chores.
-    String minAssignee = await isEqualNumChores(currUserModel);
+    String minAssignee = await isEqualNumChores(currUserModel, existingRoommates);
     if (minAssignee != "equal"){
-      debugPrint("assignee determined within phase 1");
+      // debugPrint("assignee determined within phase 1");
       return minAssignee;
     }
+    
 
     // PHASE 2: The modified Adjusted Winner Algorithm
     // Part 1: Adjust all preferences for winners.
     Map<String, String> algorithmicPreferences = await assignPreferences(sliderPrefs, existingRoommates.length);
-    debugPrint("FINAL ASSIGNMENT FOR REAL: $algorithmicPreferences");
+    // debugPrint("FINAL ASSIGNMENT FOR REAL: $algorithmicPreferences");
     // Part 2: Figure out what chore type it is.
     List<String> choreNameWords = choreName.split(' ');
+    List<String> cleanerKeywords = ['clean', 'wash', 'wipe'];
+    List<String> organizerKeywords = ['tidy', 'organize', 'vacuum'];
+    List<String> outdoorKeywords = ['outdoor', 'outside', 'out', 'trash'];
+    List<String> maintainKeywords = ['fix', 'work', 'maintain', 'request', 'change'];
     for (String word in choreNameWords) {
       // Check if the word contains "clean" (case insensitive)
-      if (word.toLowerCase().contains('clean')) {
+      if (cleanerKeywords.contains(word)) {
         return algorithmicPreferences['cleaner'] ?? '';
       }
-      else if (word.toLowerCase().contains('organize')) {
+      else if (organizerKeywords.contains(word)) {
         return algorithmicPreferences['organizer'] ?? '';
       }
-      else if (word.toLowerCase().contains('trash')){
+      else if (outdoorKeywords.contains(word)){
         return algorithmicPreferences['outdoor'] ?? '';
+      }
+      else if (maintainKeywords.contains(word)) {
+        return algorithmicPreferences['maintain'] ?? '';
       }
     }
     // PHASE 3: Nothing else yielded a conclusive result, so just pick someone at random
@@ -79,8 +87,8 @@ class AutoAssignClass extends StatefulWidget {
   }
 }
 
-  Future<String> isEqualNumChores(UserModel um) async {
-    debugPrint("=========isEqualNumChores()============");
+  Future<String> isEqualNumChores(UserModel um, List<String> existingRoommates) async {
+    // debugPrint("=========isEqualNumChores()============");
     List<String> assigneeEmails = [];
      try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -94,6 +102,7 @@ class AutoAssignClass extends StatefulWidget {
           String assignee = data['assignee'] as String;
             assigneeEmails.add(assignee);
       });
+      // debugPrint("assignee emails: $assigneeEmails");
 
     Map<String, int> frequencyMap = {};
     for (String a in assigneeEmails) {
@@ -102,14 +111,25 @@ class AutoAssignClass extends StatefulWidget {
     int firstFrequency = frequencyMap.values.first;
     bool isFrequencyEqual = frequencyMap.values.every((frequency) => frequency == firstFrequency);
     String? minFrequencyAssignee;
-    if (!isFrequencyEqual) {
+
+    Set<String> uniqueAssignees = assigneeEmails.toSet();
+    if (!isFrequencyEqual && uniqueAssignees.length > 1) {
       int minFrequency = frequencyMap.values.reduce((value, element) => value < element ? value : element);
       minFrequencyAssignee = frequencyMap.keys.firstWhere((key) => frequencyMap[key] == minFrequency);
       return minFrequencyAssignee;
     }
+    if (uniqueAssignees.length == 1){
+      // debugPrint("One unique roommate!!!");
+      existingRoommates.remove(uniqueAssignees.elementAt(0));
+      Future<String> randomChoice = _getRandomUser(existingRoommates);
+      String awaitedRandomChoice = await randomChoice;
+      return awaitedRandomChoice;
+    }
+    // else {
+    //   // debugPrint("Phase 1 did not return, move to Phase 2.");
+    // }
     } catch (e) {
       debugPrint('Error getting chores: $e');
-      // Handle error
     }
     return "equal";
   }
@@ -119,7 +139,7 @@ class AutoAssignClass extends StatefulWidget {
     // [OPTIONAL] (not in this file): First make sure that preferences page caps the total points assignable to 0.8p where p is the number of preferences.
     //
     // For each preference, determine which roommate wins that preference (naive). Ties are awarded based on who has the lower number of wins at the time of the tie (well, ideally). Result: winningPrefNaive is a map containing the winner of each category and their score.
-    debugPrint("=====================runComplexAlgorithm()====================================");
+    // debugPrint("=====================runComplexAlgorithm()====================================");
     Map<String, List<dynamic>> winningPrefNaive = {};
     Map<String, String> winningPrefNaiveCategoriesOnly = {};
     Map<String, List<dynamic>> losingPrefNaive = {};
@@ -291,7 +311,7 @@ class AutoAssignClass extends StatefulWidget {
   }
 
   Future<String> _getRandomUser(List<String> roommates) async {
-    debugPrint("Available roommates $roommates");
+    // debugPrint("Available roommates $roommates");
     Random random = Random();
     return roommates[random.nextInt(roommates.length)];
   }

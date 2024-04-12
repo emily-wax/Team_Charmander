@@ -165,6 +165,7 @@ class _ToDoListState extends State<ToDoList> {
   Widget buildChoresPage() {
     String formattedDate = "";
     bool assigneeMatchesCurrUser = false;
+    bool showEveryonesTasks = false;
     return Column(
         children: [
           Expanded(
@@ -178,6 +179,8 @@ class _ToDoListState extends State<ToDoList> {
                 }
                   var chores = snapshot.data!.docs;
                   List<Widget> choreWidgets = [];
+                  Color textColor = Colors.black;
+                  
 
                   for (var c in chores) {
                     var choreData = c.data() as Map<String, dynamic>;
@@ -195,10 +198,14 @@ class _ToDoListState extends State<ToDoList> {
 
                     if (assignee == currUserModel!.email){
                       assigneeMatchesCurrUser = true;
+                      textColor = Colors.blue;
                     }
                     else {
                       assigneeMatchesCurrUser = false;
+                      textColor = Colors.black;
                     }
+
+                    
 
                     var choreWidget = ListTile(
                       contentPadding: const EdgeInsets.all(0),
@@ -219,12 +226,22 @@ class _ToDoListState extends State<ToDoList> {
                                 Text(
                                   'Task: $choreName',
                                   style: TextStyle(
+                                    color: textColor,
                                     decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                                   ),
                                 ),
-                                Text('Assignee: $assignee'),
-                                if (deadline != null) Text('Deadline: $formattedDate'),
-                                Text('Estimated time: $timelength')
+                                Text('Assignee: $assignee',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  )),
+                                if (deadline != null) Text('Deadline: $formattedDate',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  )),
+                                Text('Estimated time: $timelength',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  ))
                                 
                               ],
                             ),

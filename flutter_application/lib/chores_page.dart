@@ -20,7 +20,7 @@ class _ToDoListState extends State<ToDoList> {
 
   void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline, String? timelength) {
     if (autoAssignChecked){
-      debugPrint("Auto Assign checked!");
+      // debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result){
         setState(() {
@@ -48,6 +48,8 @@ class _ToDoListState extends State<ToDoList> {
     selectedUser = null;
     selectedDate = null;
     selectedTimelength = null;
+    autoAssignChecked = false;
+
     
   }
 

@@ -170,15 +170,15 @@ class _CalendarPageState extends State<CalendarPage> {
             // Cancel button...
             ElevatedButton(
               onPressed: () async {
-                /* add start and end time back */
+                /* TODO:add start and end time back */
                 if (eventName != null) {
                   final selectedDate = _calendarController.selectedDate;
                   if (selectedDate != null) {
                     UserModel currUserModel = await readData();
                     final event = {
                       'name': eventName,
-                      // 'start': _startTime!.format(context),
-                      // 'end': _endTime!.format(context),
+                      'start': _startTime!.format(context),
+                      'end': _endTime!.format(context),
                       'user': currUserModel.email, // Placeholder for user name, replace with actual user name
                     };
 

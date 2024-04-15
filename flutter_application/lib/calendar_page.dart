@@ -32,7 +32,6 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     super.initState();
-    _calendarView = CalendarView.day;
     _updateDisplayDate();
     _fetchUserModel();
   }
@@ -116,7 +115,7 @@ Widget buildCalendarPage( QuerySnapshot? snapshot ) {
     _eventDataSource.appointments!.addAll(appointments);
 
     return SfCalendar(
-      view: CalendarView.week,
+      view: CalendarView.day,
       dataSource: _eventDataSource,
     );
   }

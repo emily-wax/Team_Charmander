@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth for user authentication
@@ -33,6 +34,17 @@ class _CalendarPageState extends State<CalendarPage> {
     super.initState();
     _calendarView = CalendarView.day;
     _updateDisplayDate();
+    _fetchUserModel();
+  }
+
+  void _fetchUserModel() async {
+    try {
+      currUserModel = await readData();
+      setState(() {}); // Trigger a rebuild after getting the user model
+    } catch (error) {
+      // Handle error here, such as displaying an error message or retrying
+      print('Error fetching user data: $error');
+    }
   }
 
   @override
@@ -52,72 +64,60 @@ class _CalendarPageState extends State<CalendarPage> {
           )
         ],
       ),
-      body: FutureBuilder<UserModel>(
-        future: readData(),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestore
+            .collection('households')
+            .doc(currUserModel?.currHouse)
+            .collection('events')
+            .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || currUserModel == null) {
             return const Center(
               child: CircularProgressIndicator(),
             );
-          } else if (snapshot.hasError) {
+          }
+          if (snapshot.hasError) {
             return Center(
               child: Text('Error: ${snapshot.error}'),
             );
-          } else {
-            currUserModel = snapshot.data; // Set currUserModel once future completes
-            _householdId = currUserModel!.currHouse!;
-            return buildCalendarPage(); // Build the main content of the page
           }
+          return buildCalendarPage(snapshot.data);
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
         onPressed: _handleAddEvent,
       ),
     );
   }
 
-  Widget buildCalendarPage() {
-    return Column(
-      children: [
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('households')
-                .doc(_householdId) // Use the household ID obtained from Firestore
-                .collection('events')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
+  Widget buildCalendarPage(QuerySnapshot? snapshot) {
+    if (snapshot == null || currUserModel == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    if (snapshot.docs.isEmpty) {
+      return const Center(
+        child: Text('No events available'),
+      );
+    }
 
-              final events = snapshot.data!.docs;
-              List<Widget> eventWidgets = [];
+    List<Appointment> appointments = snapshot.docs.map((doc) {
+      Map<String, dynamic> data = (doc.data() as Map<String, dynamic>);
+      return Appointment(
+        startTime: data['start'].toDate(),
+        endTime: data['end'].toDate(),
+        subject: data['name'],
+      );
+    }).toList();
 
-              for (var event in events) {
-                var eventData = event.data() as Map<String, dynamic>;
-                var startTime = eventData['start'].toDate(); // Convert Firestore Timestamp to DateTime
-                var endTime = eventData['end'].toDate(); // Convert Firestore Timestamp to DateTime
-                var eventName = eventData['name'];
+    _eventDataSource.appointments!.clear();
+    _eventDataSource.appointments!.addAll(appointments);
 
-                var eventWidget = ListTile(
-                  title: Text(eventName),
-                  subtitle: Text('Start: $startTime | End: $endTime'),
-                  // Add more details or customize the appearance of the event widget as needed
-                );
-                eventWidgets.add(eventWidget);
-              }
-
-              return ListView(
-                children: eventWidgets,
-              );
-            },
-          ),
-        ),
-      ],
+    return SfCalendar(
+      view: CalendarView.week,
+      dataSource: _eventDataSource,
     );
   }
 
@@ -251,9 +251,35 @@ class _CalendarPageState extends State<CalendarPage> {
                       'user': currUserModel.email, // Placeholder for user name, replace with actual user name
                     };
 
+                    final startTime = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      _startTime!.hour,
+                      _startTime!.minute,
+                    );
+
+                    final endTime = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      _endTime!.hour,
+                      _endTime!.minute,
+                    );
+
+                    final appointment = Appointment(
+                      endTime: endTime,
+                      startTime: startTime,
+                      subject: eventName!,
+                    );
+
+                    setState(() {
+                      _eventDataSource.appointments?.add(appointment);
+                    });
+
                     await _firestore
                         .collection('households')
-                        .doc(_householdId) // Use the household ID obtained from Firestore
+                        .doc(currUserModel.currHouse) // Use the household ID obtained from Firestore
                         .collection('events')
                         .add(event);
                   }

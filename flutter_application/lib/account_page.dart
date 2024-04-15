@@ -8,6 +8,10 @@ import 'HomePage.dart';
 import 'SignInPage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 // TODO: add a password for joining the house
 // TODO: create a back home button
@@ -154,6 +158,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
@@ -168,7 +174,6 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
         ],
       ),
       body: Container(
-        color: Colors.orange, // Set the background color to orange
         child: Center(
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -193,29 +198,31 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text('Adjust each scale:'),
-                                    content: SingleChildScrollView(
+                                  title: Text('Adjust each scale:'),
+                                  content: SingleChildScrollView(
                                       child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // const Text("For best results, keep total score < 4.0"),
-                                        PreferenceSlider(),
-                                        const SizedBox(height: 16),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text('Submit'),
-                                        ),
-                                      ],
-                                    ),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      PreferenceSlider (),
+                                      SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text('Done', style: TextStyle(color: Colors.white)),
+                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
+                                      ),
+                                    ],
+                                  ),
                                     // contentPadding: const EdgeInsets.all(30.0),
                                     )
-                                  );
+                                );
+
                                 },
                               );
                             },
-                            child: const Text('Set Preferences'),
+                            child: Text('Set Preferences', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                           ),
 
                           Text('User Household:'),
@@ -262,8 +269,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Create a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
               SizedBox(height: 20),
@@ -278,8 +286,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Join a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
             ])),

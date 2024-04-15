@@ -5,6 +5,9 @@ import 'package:flutter_application/household_model.dart';
 import 'HomePage.dart';
 import 'account_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
+
 
 class HouseholdCreate extends StatelessWidget{
   @override
@@ -42,9 +45,12 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
+      backgroundColor: themeProvider.selectedTheme.backgroundColor,
       appBar: AppBar(
-        title: Text('Household Creation Form'),
+        backgroundColor: themeProvider.selectedTheme.backgroundColor,
+        title: Text('Household Creation Form', style: TextStyle(color: themeProvider.textColor),),
         actions: [
           IconButton(
             icon: const Icon(Icons.home),
@@ -77,8 +83,14 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
+                style: TextStyle(color: themeProvider.inputColor),
+        
                 controller: _nameController,
                 decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: themeProvider.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: themeProvider.buttonColor),
                   labelText: 'Household Name',
                 ),
                 validator: (value) {
@@ -87,11 +99,18 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                   }
                   return null;
                 },
+                cursorColor: themeProvider.buttonColor,
               ),
               TextFormField(
+                style: TextStyle(color: themeProvider.inputColor),
+                cursorColor: themeProvider.buttonColor,
                 controller: _countController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: themeProvider.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: themeProvider.buttonColor),
                   labelText: 'Maximum Roommate Count',
                 ),
                 validator: (value) {
@@ -102,9 +121,15 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                 },
               ),
               TextFormField(
+                style: TextStyle(color: themeProvider.inputColor),
+                cursorColor: themeProvider.buttonColor,
                 controller: _passwordController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: themeProvider.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: themeProvider.buttonColor),
                   labelText: 'Password',
                   helperText: 'This is used to control who can join your household',
                 ),
@@ -118,6 +143,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       // Process the data
@@ -126,7 +152,7 @@ class _HouseholdCreateFormState extends State<HouseholdCreateForm> {
                       _saveHouseholdToFirebase(name, count, _passwordController.text );
                     }
                   },
-                  child: Text('Submit'),
+                  child: Text('Submit', style: TextStyle(color: themeProvider.textColor),),
                 ),
               ),
             ],

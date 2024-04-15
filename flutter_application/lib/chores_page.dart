@@ -1,9 +1,15 @@
+// import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'user_model.dart';
 import 'household_model.dart';
 import 'auto_assign_chores.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 class ToDoList extends StatefulWidget {
   const ToDoList({Key? key}) : super(key: key);
@@ -18,9 +24,9 @@ class _ToDoListState extends State<ToDoList> {
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline, String? timelength) {
+  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
     if (autoAssignChecked){
-      // debugPrint("Auto Assign checked!");
+      debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result){
         setState(() {
@@ -31,7 +37,6 @@ class _ToDoListState extends State<ToDoList> {
             'assignee': assignee,
             'isCompleted': false,
             'deadline': deadline,
-            'timelength': timelength,
           });
         });
       });      
@@ -42,18 +47,14 @@ class _ToDoListState extends State<ToDoList> {
         'assignee': assignee,
         'isCompleted': false,
         'deadline': deadline,
-        'timelength': timelength
       });
     }
     selectedUser = null;
     selectedDate = null;
-    selectedTimelength = null;
-    autoAssignChecked = false;
-
     
   }
 
-  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline, String? timelength) async {
+  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -65,7 +66,6 @@ class _ToDoListState extends State<ToDoList> {
           'choreName': choreName,
           'assignee': assignee,
           'deadline': deadline,
-          'timelength': timelength,
           });
         });
       });
@@ -75,7 +75,6 @@ class _ToDoListState extends State<ToDoList> {
         'choreName': choreName,
         'assignee': assignee,
         'deadline': deadline,
-        'timelength': timelength
       });
     }
   }
@@ -84,7 +83,7 @@ class _ToDoListState extends State<ToDoList> {
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
   }
 
-  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser, String timelength) {
+  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser) {
     debugPrint("reassignment in progress");
     FirebaseFirestore.instance
         .collection('households')
@@ -95,7 +94,6 @@ class _ToDoListState extends State<ToDoList> {
       'choreName': choreName,
       'assignee': newAssigneeUser,
       'deadline': deadline,
-      'timelength': timelength,
     });
     debugPrint("reassignment done!");
   }
@@ -133,12 +131,12 @@ class _ToDoListState extends State<ToDoList> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
-  String? selectedTimelength;
   List<String> _users = [];
-  final List<String> _timelengths = ['5m', '10m', '15m', '30m', '60m'];
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: const Text('To-Do List'),
@@ -149,7 +147,7 @@ class _ToDoListState extends State<ToDoList> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),),
             );
           } else if (snapshot.hasError) {
             return Center(
@@ -164,34 +162,28 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 
-  Widget buildChoresPage() {
+Widget buildChoresPage() {
     String formattedDate = "";
     bool assigneeMatchesCurrUser = false;
-    bool showEveryonesTasks = false;
-    return Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                  var chores = snapshot.data!.docs;
-                  List<Widget> choreWidgets = [];
-                  Color textColor = Colors.black;
-                  
-
-                  for (var c in chores) {
-                    var choreData = c.data() as Map<String, dynamic>;
-                    var choreId = c.id;
-                    var choreName = choreData['choreName'];
-                    var assignee = choreData['assignee'];
-                    var isCompleted = choreData['isCompleted'];
-                    var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
-                    var timelength = choreData['timelength'];
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      }
+      var chores = snapshot.data!.docs;
+      return ListView.builder(
+        padding: EdgeInsets.all(8),
+        itemCount: chores.length,
+        itemBuilder: (context, index) {
+          var choreData = chores[index].data() as Map<String, dynamic>;
+          var choreId = chores[index].id;
+          var choreName = choreData['choreName'];
+          var assignee = choreData['assignee'];
+          var isCompleted = choreData['isCompleted'];
+          var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
 
                     if (deadline != null){
                       formattedDate =
@@ -200,108 +192,75 @@ class _ToDoListState extends State<ToDoList> {
 
                     if (assignee == currUserModel!.email){
                       assigneeMatchesCurrUser = true;
-                      textColor = Colors.blue;
                     }
                     else {
                       assigneeMatchesCurrUser = false;
-                      textColor = Colors.black;
                     }
 
-                    
-
-                    var choreWidget = ListTile(
-                      contentPadding: const EdgeInsets.all(0),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Checkbox(
-                            value: isCompleted,
-                            onChanged: (value) {
-                               FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
-                            },
+          return Container(
+            margin: EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              title: Row(
+                children: [
+                  Checkbox(
+                    value: isCompleted,
+                    activeColor: theme.buttonColor,
+                    onChanged: (value) {
+                      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
+                    },
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Task: $choreName',
+                          style: TextStyle(
+                            decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Task: $choreName',
-                                  style: TextStyle(
-                                    color: textColor,
-                                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                                  ),
-                                ),
-                                Text('Assignee: $assignee',
-                                  style: TextStyle(
-                                    color: textColor,
-                                  )),
-                                if (deadline != null) Text('Deadline: $formattedDate',
-                                  style: TextStyle(
-                                    color: textColor,
-                                  )),
-                                Text('Estimated time: $timelength',
-                                  style: TextStyle(
-                                    color: textColor,
-                                  ))
-                                
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              if (!assigneeMatchesCurrUser)
-                                IconButton(
-                                icon: const Icon(Icons.shopping_cart_rounded),
-                                onPressed: () {
-                                  _reassignChoreOnClaim(choreName, choreId, assignee, deadline, currUserModel!.email, timelength);
-                                }
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  _editChore(choreName, choreId, assignee, deadline, timelength);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteChore(choreId);
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
+                        Text('Assignee: $assignee'),
+                        if (deadline != null) Text('Deadline: $deadline'),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () {
+                          _editChore(choreName, choreId, assignee, deadline);
+                        },
                       ),
-                    );
-                    choreWidgets.add(choreWidget);
-                  }
-                  return ListView(
-                    children: choreWidgets,
-                  );
-                },
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          _deleteChore(choreId);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  assigneeController.clear();
-                  titleController.clear();
-                  _showAddTaskDialog(context);
-                },
-                child: const Text('Add Task'),
-              ),
-            ),
-          ],
-        );
-   
-  }
+          );
+        },
+      );
+    },
+  );
+}
 
-  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline, String timelength) {
+
+
+  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
-    String? editedTimelength = timelength;
 
     showDialog(
       context: context,
@@ -315,13 +274,26 @@ class _ToDoListState extends State<ToDoList> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextFormField(
+                      cursorColor: theme.buttonColor,
                       initialValue: choreName,
-                      decoration: const InputDecoration(labelText: 'Task Name'),
+                      decoration: InputDecoration(labelText: 'Task Name', 
+                      focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: theme.buttonColor),
+                      
+                       // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: theme.buttonColor),),
                       onChanged: (value) {
                         editedChoreName = value;
                       },
+                      
                     ),
                     DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                      ),
+                    ),
                       value: editedAssignee,
                       onChanged: (value) {
                         setState(() {
@@ -340,6 +312,7 @@ class _ToDoListState extends State<ToDoList> {
                       children: [
                         Checkbox(
                           value: autoAssignChecked,
+                          activeColor: theme.buttonColor,
                           onChanged: (bool? value) {
                             setState(() {
                               autoAssignChecked = value!;
@@ -357,8 +330,9 @@ class _ToDoListState extends State<ToDoList> {
                     ),
                     Row(
                         children: [
-                          const Text('Select Deadline: '),
+                          Text('Select Deadline: ', style: TextStyle(color: theme.inputColor),),
                           ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                             onPressed: () async {
                               DateTime? pickedDate = await showDatePicker(
                                 context: context,
@@ -366,7 +340,6 @@ class _ToDoListState extends State<ToDoList> {
                                 firstDate: DateTime.now(),
                                 lastDate: DateTime(2101),
                               );
-
                               if (pickedDate != null &&
                                   pickedDate != selectedDate) {
                                 setState(() {
@@ -376,61 +349,40 @@ class _ToDoListState extends State<ToDoList> {
                             },
                             child: Text(selectedDate != null
                                 ? 'Change Deadline'
-                                : 'Set Deadline...'),
+                                : 'Set Deadline...', style: TextStyle(color: Colors.white),),
                           ),
                           if (selectedDate != null)
                             Text('Deadline: $selectedDate'),
                         ],
                       ),
-                      Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: editedTimelength,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        editedTimelength = newValue;
-                      });
-                    },
-                    items: _timelengths.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    hint: const Text('Select Time Est. (default 15min)'),
-                  ),
-                ],
-              ),
-            ],
+                  ],
                 ),
               ),
               actions: [
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                   onPressed: () {
                     Timestamp? deadline = selectedDate != null
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
 
-                    if (editedTimelength == null) {
-                      editedTimelength = '15m';
-                    }
-
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
-                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline, editedTimelength);
+                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
                         Navigator.of(context).pop();
                       }
                     }
 
 
                   },
-                  child: const Text('Save'),
+                  child: const Text('Save', style: TextStyle(color: Colors.white)),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Cancel'),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white)),
                 ),
               ],
             );
@@ -451,12 +403,22 @@ class _ToDoListState extends State<ToDoList> {
           return Column(
             children: [
               TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
+                cursorColor: theme.buttonColor,
+                decoration: InputDecoration(
                   hintText: 'Enter task title',
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: theme.buttonColor),
                 ),
+                controller: titleController,
               ),
               DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  ),
+                ),
                 value: selectedUser,
                 onChanged: (value) {
                   setState(() {
@@ -469,101 +431,82 @@ class _ToDoListState extends State<ToDoList> {
                     child: Text(user),
                   );
                 }).toList(),
-                hint: const Text('Select Assignee'),
+                hint: Text('Select Assignee', style: TextStyle(color: theme.inputColor)),
               ),
-              Row(
-                children: [
-                  Checkbox(
-                    value: autoAssignChecked,
-                    onChanged: (bool? value) {
-                      setState(() =>
-                        autoAssignChecked = value!);
-                    },
-                  ),
-                  const Text('Auto-assign this task'),
-                  IconButton(
-                          icon: const Icon(Icons.question_mark),
-                          onPressed: () {
-                            _showAutoAssignDialog(context);
-                          },
-                        )
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('Select Deadline: '),
-                  ElevatedButton(
-                    onPressed: () async {
-                      DateTime? pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2101),
-                      );
+             Row(
+              children: [
+                Checkbox(
+                  activeColor: theme.buttonColor,
+                  value: autoAssignChecked,
+                  onChanged: (bool? value) {
+                    setState(() =>
+                      autoAssignChecked = value!);
+                  },
+                ),
+                const Text('Auto-assign this task'),
+                IconButton(
+                        icon: const Icon(Icons.question_mark),
+                        onPressed: () {
+                          _showAutoAssignDialog(context);
+                        },
+                      )
+              ],
+            ),
+            Row(
+              children: [
+                Text('Select Deadline: ', style: TextStyle(color: theme.inputColor),),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2101),
+                    );
 
-                      if (pickedDate != null &&
-                          pickedDate != selectedDate) {
-                        setState(() {
-                          selectedDate = pickedDate;
-                        });
-                      }
-                    },
-                    child: Text(selectedDate != null
-                        ? 'Change Deadline'
-                        : 'Set Deadline...'),
-                  ),
-                  if (selectedDate != null) Text('Deadline: $selectedDate'),
-                ],
-              ),
-              Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: selectedTimelength,
-                    onChanged: (String? newValue) {
+                    if (pickedDate != null &&
+                        pickedDate != selectedDate) {
                       setState(() {
-                        selectedTimelength = newValue;
+                        selectedDate = pickedDate;
                       });
-                    },
-                    items: _timelengths.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    hint: const Text('Select Time Est. (default 15min)'),
-                  ),
-                ],
-              ),
-          ],
-        );
-      },
-      ),
+                    }
+                  },
+                  child: Text(selectedDate != null
+                      ? 'Change Deadline'
+                      : 'Set Deadline...', style: TextStyle(color: Colors.white),),
+                ),
+                if (selectedDate != null) Text('Deadline: $selectedDate', style: TextStyle(color: Colors.white),),
+              ],
+            ),
+            ],
+          );
+            },
+          ),
+           
           actions: [
             TextButton(
+              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white)),
             ),
             TextButton(
+              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 String choreName = titleController.text.trim();
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
-                if (selectedTimelength == null) {
-                  selectedTimelength = '15m';
-                }
-
                 if (choreName.isNotEmpty){
                   if (selectedUser != null || autoAssignChecked){
-                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline, selectedTimelength);
-                    Navigator.of(context).pop();
+                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);Navigator.of(context).pop();
                   }
                 }
 
                 
               },
-              child: const Text('Add'),
+              child: const Text('Add', style: TextStyle(color: Colors.white)),
             ),
           ],
         );

@@ -5,10 +5,14 @@ import 'chores_page.dart';
 import 'appliances_page.dart';
 import 'calendar_page.dart'; // Import the CalendarPage
 import 'package:firebase_auth/firebase_auth.dart';
+// import 'theme_provider.dart'; // Import your themes file
+// import 'package:provider/provider.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'user_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key});
-
+  // final bool _isThemeInitialized = false;
   
   @override
   _HomePageState createState() => _HomePageState();
@@ -41,25 +45,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('Welcome Home'),
-      //   actions: [
-      //     IconButton(
-      //       icon: const Icon(Icons.home),
-      //       onPressed: () {
-      //         print('Home icon pressed!');
-      //       },
-      //     ),
-      //     Tooltip(
-      //       message: 'Log out',
-      //       child: IconButton( 
-      //         icon: Icon(Icons.logout),
-      //         onPressed:() => _logout(context),
-      //       ), 
-      //     )
-      //   ],
-      // ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -85,11 +72,12 @@ class _HomePageState extends State<HomePage> {
           });
         },
         selectedItemColor: Colors.black, // Color for selected icon and label
-        unselectedItemColor: Colors.black.withOpacity(0.5), // Color for unselected icon and label
+        unselectedItemColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.checklist),
-            label: 'Chores',
+            label: 'Chores', 
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.devices),
@@ -105,81 +93,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      // body: Container(
-      //   color: Colors.yellow[200],
-      //   child: Center(
-      //     child: Column(
-      //       mainAxisAlignment: MainAxisAlignment.center,
-      //       children: <Widget>[
-      //         const Icon(
-      //           Icons.house,
-      //           size: 100,
-      //           color: Colors.green,
-      //         ),
-      //         const SizedBox(height: 20),
-      //         Text(
-      //           'Welcome to Your House!',
-      //           style: TextStyle(
-      //             fontSize: 24,
-      //             color: Theme.of(context).primaryColor,
-      //           ),
-      //         ),
-      //         const SizedBox(height: 20),
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(builder: (context) => ToDoList()),
-      //             );
-      //           },
-      //           child: const Text(
-      //             'Chores',
-      //             style: TextStyle(fontSize: 20),
-      //           ),
-      //         ),
-      //         const SizedBox(height: 20),
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(builder: (context) => AccountPage()),
-      //             );
-      //           },
-      //           child: const Text(
-      //             'Account',
-      //             style: TextStyle(fontSize: 20),
-      //           ),
-      //         ),
-      //         const SizedBox(height: 20),
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(builder: (context) => AppliancesPage()),
-      //             );
-      //           },
-      //           child: const Text(
-      //             'Appliances',
-      //             style: TextStyle(fontSize: 20),
-      //           ),
-      //         ),
-      //         const SizedBox(height: 20),
-      //         ElevatedButton(
-      //           onPressed: () {
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(builder: (context) => const CalendarPage()),
-      //             );
-      //           },
-      //           child: const Text(
-      //             'Calendar',
-      //             style: TextStyle(fontSize: 20),
-      //           ),
-      //         ),             
-      //       ],
-      //     ),
-        // ),
       );
     // );
   }
 }
+

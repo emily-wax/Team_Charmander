@@ -138,6 +138,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
   @override
   Widget build(BuildContext context) {
+    // String householdTitle = _household!.name +" (" + _household!.roommates.length.toString() + "/" + _household!.max_roommate_count.toString() + ")";
+    String householdTitle = "";
+    if (_household != null){
+      householdTitle = '${_household!.name} (${_household!.roommates.length}/${_household!.max_roommate_count})';
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
@@ -204,11 +209,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                             child: const Text('Set Preferences'),
                           ),
 
-                          Text('User Household:'),
-                          SizedBox(height: 10,),
+                          // Text('User Household:'),
+                          // SizedBox(height: 10,),
                           if (_household != null)
                                 ListTile(
-                                  title: Text(_household!.name),
+                                  title: Text(householdTitle),
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: _household!.roommates.map((email) => Text(email)).toList(),
@@ -216,8 +221,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text("Number of Household Members: ${_household!.roommates.length}"),
-                                      SizedBox(width: 10),
+                                      // Text("Number of Household Members: ${_household!.roommates.length}"),
+                                      // SizedBox(width: 10),
                                       IconButton(
                                         onPressed: () {
                                           removeFromHousehold(_household!.name);

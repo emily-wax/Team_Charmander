@@ -26,7 +26,6 @@ class UserModel{
     return{
       "id": id,
       "email": email,
-      "password": password,
       "currHouse": currHouse,
       "darkMode": darkMode,
       "slider-prefs": preferences

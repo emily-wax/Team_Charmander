@@ -185,7 +185,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                 builder: (BuildContext context) {
                                   return AlertDialog(
                                   title: Text('Adjust each scale:'),
-                                  content: Column(
+                                  content: SingleChildScrollView(
+                                      child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       PreferenceSlider (),
@@ -199,6 +200,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                       ),
                                     ],
                                   ),
+                                    // contentPadding: const EdgeInsets.all(30.0),
+                                    )
                                 );
 
                                 },

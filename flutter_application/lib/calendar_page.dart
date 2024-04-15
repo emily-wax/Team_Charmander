@@ -188,6 +188,12 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _handleAddEvent() {
+
+  DateTime? selectedStartDate = DateTime.now();
+  TimeOfDay? selectedStartTime;
+  DateTime? selectedEndDate = DateTime.now();
+  TimeOfDay? selectedEndTime;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -211,73 +217,57 @@ class _CalendarPageState extends State<CalendarPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Start Time'),
-                      GestureDetector(
-                        onTap: () async {
-                          final selectedTime = await showTimePicker(
+                      ElevatedButton(
+                        onPressed: () async {
+                          final selectedDate = await showDatePicker(
                             context: context,
-                            initialTime: TimeOfDay.now(),
-                            builder: (context, child) {
-                              return MediaQuery(
-                                data: MediaQuery.of(context).copyWith(
-                                  alwaysUse24HourFormat: false,
-                                ),
-                                child: child ?? const SizedBox.shrink(),
-                              );
-                            },
-                            initialEntryMode: TimePickerEntryMode.input,
-                            hourLabelText: 'Hour',
-                            minuteLabelText: 'Minute',
+                            initialDate: selectedStartDate ?? DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
                           );
-                          if (selectedTime != null) {
-                            setState(() {
-                              _startTime = selectedTime;
-                            });
+                          if (selectedDate != null) {
+                            final selectedTime = await showTimePicker(
+                              context: context,
+                              initialTime: selectedStartTime ?? TimeOfDay.now(),
+                            );
+                            if (selectedTime != null) {
+                              setState(() {
+                                selectedStartDate = selectedDate;
+                                selectedStartTime = selectedTime;
+                              });
+                            }
                           }
                         },
-                        child: Text(
-                          _startTime?.format(context) ?? 'Select Start Time',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
+                        child: const Text('Start'),
                       ),
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('End Time'),
-                      GestureDetector(
-                        onTap: () async {
-                          final selectedTime = await showTimePicker(
+                      ElevatedButton(
+                        onPressed: () async {
+                          final selectedDate = await showDatePicker(
                             context: context,
-                            initialTime: _startTime?.replacing(hour: _startTime!.hour + 1) ??
-                                TimeOfDay.now(),
-                            builder: (context, child) {
-                              return MediaQuery(
-                                data: MediaQuery.of(context).copyWith(
-                                  alwaysUse24HourFormat: false,
-                                ),
-                                child: child ?? const SizedBox.shrink(),
-                              );
-                            },
-                            initialEntryMode: TimePickerEntryMode.input,
-                            hourLabelText: 'Hour',
-                            minuteLabelText: 'Minute',
+                            initialDate: selectedStartDate ?? DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100),
                           );
-                          if (selectedTime != null) {
-                            setState(() {
-                              _endTime = selectedTime;
-                            });
+                          if (selectedDate != null) {
+                            final selectedTime = await showTimePicker(
+                              context: context,
+                              initialTime: selectedStartTime?.replacing(hour: selectedStartTime!.hour + 1) ??
+                                TimeOfDay.now(),
+                            );
+                            if (selectedTime != null) {
+                              setState(() {
+                                selectedEndDate = selectedDate;
+                                selectedEndTime = selectedTime;
+                              });
+                            }
                           }
                         },
-                        child: Text(
-                          _endTime?.format(context) ?? 'Select End Time',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
+                        child: const Text('End'),
                       ),
                     ],
                   ),
@@ -297,43 +287,55 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (eventName != null && _startTime != null && _endTime != null) {
-                  final selectedDate = _calendarController.selectedDate;
-                  if (selectedDate != null) {
+                
+                // check if name is unique
+                QuerySnapshot snapshot = await _firestore
+                    .collection('households')
+                    .doc(currUserModel!.currHouse)
+                    .collection('events')
+                    .where('name', isEqualTo: eventName)
+                    .get();
+
+                if(snapshot.docs.isNotEmpty){
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Try again with a unique event name.'),
+                  ));  
+
+                } else if (eventName != null && selectedEndTime != null && selectedStartTime != null && selectedEndDate != null && selectedStartDate != null) {
                     UserModel currUserModel = await readData();
                     final event = {
                       'name': eventName,
                       'start': DateTime(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                        _startTime!.hour,
-                        _startTime!.minute,
+                        selectedStartDate!.year,
+                        selectedStartDate!.month,
+                        selectedStartDate!.day,
+                        selectedStartTime!.hour,
+                        selectedStartTime!.minute,
                       ),
                       'end': DateTime(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                        _endTime!.hour,
-                        _endTime!.minute,
+                        selectedEndDate!.year,
+                        selectedEndDate!.month,
+                        selectedEndDate!.day,
+                        selectedEndTime!.hour,
+                        selectedEndTime!.minute,
                       ),
                       'user': currUserModel.email, // Placeholder for user name, replace with actual user name
                     };
 
                     final startTime = DateTime(
-                      selectedDate.year,
-                      selectedDate.month,
-                      selectedDate.day,
-                      _startTime!.hour,
-                      _startTime!.minute,
+                        selectedStartDate!.year,
+                        selectedStartDate!.month,
+                        selectedStartDate!.day,
+                        selectedStartTime!.hour,
+                        selectedStartTime!.minute,
                     );
 
                     final endTime = DateTime(
-                      selectedDate.year,
-                      selectedDate.month,
-                      selectedDate.day,
-                      _endTime!.hour,
-                      _endTime!.minute,
+                        selectedEndDate!.year,
+                        selectedEndDate!.month,
+                        selectedEndDate!.day,
+                        selectedEndTime!.hour,
+                        selectedEndTime!.minute,
                     );
 
                     final appointment = Appointment(
@@ -351,11 +353,10 @@ class _CalendarPageState extends State<CalendarPage> {
                         .doc(currUserModel.currHouse) // Use the household ID obtained from Firestore
                         .collection('events')
                         .add(event);
-                  }
                 }
                 _eventNameController.clear();
                 _calendarController.dispose();
-                
+
                 Navigator.of(context).pop();
               },
               child: const Text('Add'),

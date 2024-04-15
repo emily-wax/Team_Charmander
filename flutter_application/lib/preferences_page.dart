@@ -12,6 +12,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
   double _cleanerValue = 0.5; // Initial value for the slider
   double _organizerValue = 0.5;
   double _outdoorValue = 0.5;
+  double _maintainValue = 0.5;
   double _morningValue = 0.5;
   double _eveningValue = 0.5;
 
@@ -41,9 +42,9 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
         setState(() {
           _cleanerValue = sliderPrefs['cleaner'] ?? 0.5;
-          // _cleanerValue = documentSnapshot['cleaner'];
           _organizerValue = sliderPrefs['organizer'] ?? 0.5;
           _outdoorValue = sliderPrefs['outdoor'] ?? 0.5;
+          _maintainValue = sliderPrefs['maintain'] ?? 0.5;
           _morningValue = sliderPrefs['morning'] ?? 0.5;
           _eveningValue = sliderPrefs['evening'] ?? 0.5;
         });
@@ -66,6 +67,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           'cleaner': _cleanerValue,
           'organizer': _organizerValue,
           'outdoor': _outdoorValue,
+          'maintain': _maintainValue,
           'morning': _morningValue,
           'evening': _eveningValue,
         }
@@ -93,7 +95,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         min: 0,
         max: 1,
         divisions: 10, // You can adjust the divisions as needed
-        label: 'let\'s get it',
+        // label: 'let\'s get it',
         ),
         const Text("I like to organize"),
         Slider(
@@ -107,7 +109,21 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         min: 0,
         max: 1,
         divisions: 10, // You can adjust the divisions as needed
-        label: 'yes so satisfying',
+        // label: 'yes so satisfying',
+        ),
+        const Text("I like to maintain household items"),
+        Slider(
+          value: _maintainValue,
+          onChanged: (newValue) {
+            setState(() {
+              _maintainValue = newValue; // Update the value here
+            });
+            _savePreferences(); // Save the updated value
+          },
+          min: 0,
+          max: 1,
+          divisions: 10, // You can adjust the divisions as needed
+          // label: 'yes so satisfying',
         ),
         const Text("I don't mind outdoor chores"),
         Slider(
@@ -121,7 +137,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           min: 0,
           max: 1,
           divisions: 10, // You can adjust the divisions as needed
-          label: 'yeah i don\'t mind',
+          // label: 'yeah i don\'t mind',
         ),
         const Text("I want to do chores in the morning"),
         Slider(
@@ -135,7 +151,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           min: 0,
           max: 1,
           divisions: 10, // You can adjust the divisions as needed
-          label: 'early bird gets the worm!',
+          // label: 'early bird gets the worm!',
         ),
         const Text("I want to do chores in the evening"),
         Slider(
@@ -149,8 +165,9 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           min: 0,
           max: 1,
           divisions: 10, // You can adjust the divisions as needed
-          label: 'evening vibes!',
+          // label: 'evening vibes!',
         ),
+        
       ],
     );
   }

@@ -120,7 +120,7 @@ class _SignInPageState extends State<SignInPage> {
           await authService.signUpWithEmailAndPassword(email, password);
           
           // adds user to database when signing up
-          _createData(UserModel('0', email, password, "", {'cleaner': 0.5, 'evening': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
+          _createData(UserModel('0', email, "", {'cleaner': 0.5, 'evening': 0.5, 'maintain': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
 
         } else {
           // Sign In
@@ -159,7 +159,6 @@ class _SignInPageState extends State<SignInPage> {
       final newUser = UserModel(
         id,
         userModel.email, 
-        userModel.password,
         userModel.currHouse,
         userModel.preferences
       ).toJson();

@@ -13,17 +13,14 @@ class ToDoList extends StatefulWidget {
 }
 
 class _ToDoListState extends State<ToDoList> {
-  // TextEditingController taskController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // String autoAssignee = "";
 
-  // add chore to firestore given an assignee that was selected from a dropdown
-  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
+  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline, String? timelength) {
     if (autoAssignChecked){
-      debugPrint("Auto Assign checked!");
+      // debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result){
         setState(() {
@@ -34,6 +31,7 @@ class _ToDoListState extends State<ToDoList> {
             'assignee': assignee,
             'isCompleted': false,
             'deadline': deadline,
+            'timelength': timelength,
           });
         });
       });      
@@ -44,27 +42,68 @@ class _ToDoListState extends State<ToDoList> {
         'assignee': assignee,
         'isCompleted': false,
         'deadline': deadline,
+        'timelength': timelength
       });
     }
+    selectedUser = null;
+    selectedDate = null;
+    selectedTimelength = null;
+    autoAssignChecked = false;
+
     
   }
 
-  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
+  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline, String? timelength) async {
+    if (autoAssignChecked) {
+      debugPrint("Auto Assign checked!");
+      AutoAssignClass auto = AutoAssignClass();
+      auto.autoAssignChore(choreName).then((String result) {
+        setState(() {
+          assignee = result;
+          debugPrint("assignee $assignee");
+          FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
+          'choreName': choreName,
+          'assignee': assignee,
+          'deadline': deadline,
+          'timelength': timelength,
+          });
+        });
+      });
+    }
+    else{
+      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({
         'choreName': choreName,
         'assignee': assignee,
         'deadline': deadline,
+        'timelength': timelength
       });
     }
+  }
 
   void _deleteChore(String choreId) {
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
   }
 
+  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser, String timelength) {
+    debugPrint("reassignment in progress");
+    FirebaseFirestore.instance
+        .collection('households')
+        .doc(currUserModel!.currHouse)
+        .collection('chores')
+        .doc(choreId)
+        .update({
+      'choreName': choreName,
+      'assignee': newAssigneeUser,
+      'deadline': deadline,
+      'timelength': timelength,
+    });
+    debugPrint("reassignment done!");
+  }
+
   @override
   void initState() {
     super.initState();
-    _loadRoommates(); // Load users from Firestore when the dialog is initialized
+    _loadRoommates();
   }
 
   Future<void> _loadRoommates() async {
@@ -80,6 +119,7 @@ class _ToDoListState extends State<ToDoList> {
         if(querySnapshot.docs.isNotEmpty){
           currHouse = HouseholdModel.fromSnapshot(querySnapshot.docs.first);
           _users = currHouse.roommates;
+          _users.add('[unassigned]');
         } else {
           debugPrint('error loading roommates');
         }
@@ -93,7 +133,9 @@ class _ToDoListState extends State<ToDoList> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
-  List<String> _users = []; // List to store available users
+  String? selectedTimelength;
+  List<String> _users = [];
+  final List<String> _timelengths = ['5m', '10m', '15m', '30m', '60m'];
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +143,6 @@ class _ToDoListState extends State<ToDoList> {
       appBar: AppBar(
         title: const Text('To-Do List'),
       ),
-      // body: Container(
-      //   padding: const EdgeInsets.all(8),
-      //   color: Colors.purple[100],
 
       body: FutureBuilder<UserModel>(
         future: readData(),
@@ -117,8 +156,8 @@ class _ToDoListState extends State<ToDoList> {
               child: Text('Error: ${snapshot.error}'),
             );
           } else {
-            currUserModel = snapshot.data; // Set currUserModel once future completes
-            return buildChoresPage(); // Build the main content of the page
+            currUserModel = snapshot.data;
+            return buildChoresPage(); 
           }
         },
       ), 
@@ -126,6 +165,9 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   Widget buildChoresPage() {
+    String formattedDate = "";
+    bool assigneeMatchesCurrUser = false;
+    bool showEveryonesTasks = false;
     return Column(
         children: [
           Expanded(
@@ -139,6 +181,8 @@ class _ToDoListState extends State<ToDoList> {
                 }
                   var chores = snapshot.data!.docs;
                   List<Widget> choreWidgets = [];
+                  Color textColor = Colors.black;
+                  
 
                   for (var c in chores) {
                     var choreData = c.data() as Map<String, dynamic>;
@@ -147,20 +191,36 @@ class _ToDoListState extends State<ToDoList> {
                     var assignee = choreData['assignee'];
                     var isCompleted = choreData['isCompleted'];
                     var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
+                    var timelength = choreData['timelength'];
+
+                    if (deadline != null){
+                      formattedDate =
+                      '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+                    }
+
+                    if (assignee == currUserModel!.email){
+                      assigneeMatchesCurrUser = true;
+                      textColor = Colors.blue;
+                    }
+                    else {
+                      assigneeMatchesCurrUser = false;
+                      textColor = Colors.black;
+                    }
+
+                    
 
                     var choreWidget = ListTile(
-                      contentPadding: const EdgeInsets.all(0), // Remove default padding
+                      contentPadding: const EdgeInsets.all(0),
                       title: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Checkbox(
                             value: isCompleted,
                             onChanged: (value) {
-                              // choresCollection.doc(choreId).update({'isCompleted': value});
                                FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
                             },
                           ),
-                          const SizedBox(width: 8), // Add some spacing between checkbox and task details
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,20 +228,39 @@ class _ToDoListState extends State<ToDoList> {
                                 Text(
                                   'Task: $choreName',
                                   style: TextStyle(
+                                    color: textColor,
                                     decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                                   ),
                                 ),
-                                Text('Assignee: $assignee'),
-                                if (deadline != null) Text('Deadline: $deadline'),
+                                Text('Assignee: $assignee',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  )),
+                                if (deadline != null) Text('Deadline: $formattedDate',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  )),
+                                Text('Estimated time: $timelength',
+                                  style: TextStyle(
+                                    color: textColor,
+                                  ))
+                                
                               ],
                             ),
                           ),
                           Row(
                             children: [
+                              if (!assigneeMatchesCurrUser)
+                                IconButton(
+                                icon: const Icon(Icons.shopping_cart_rounded),
+                                onPressed: () {
+                                  _reassignChoreOnClaim(choreName, choreId, assignee, deadline, currUserModel!.email, timelength);
+                                }
+                              ),
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () {
-                                  _editChore(choreName, choreId, assignee, deadline);
+                                  _editChore(choreName, choreId, assignee, deadline, timelength);
                                 },
                               ),
                               IconButton(
@@ -207,7 +286,6 @@ class _ToDoListState extends State<ToDoList> {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () {
-                  // taskController.clear();
                   assigneeController.clear();
                   titleController.clear();
                   _showAddTaskDialog(context);
@@ -220,9 +298,10 @@ class _ToDoListState extends State<ToDoList> {
    
   }
 
-  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {
+  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline, String timelength) {
     String editedChoreName = choreName;
-    String editedAssignee = assignee;
+    String? editedAssignee = assignee;
+    String? editedTimelength = timelength;
 
     showDialog(
       context: context,
@@ -243,10 +322,10 @@ class _ToDoListState extends State<ToDoList> {
                       },
                     ),
                     DropdownButtonFormField<String>(
-                      value: selectedUser,
+                      value: editedAssignee,
                       onChanged: (value) {
                         setState(() {
-                          selectedUser = value;
+                          editedAssignee = value;
                         });
                       },
                       items: _users.map((String user) {
@@ -264,11 +343,16 @@ class _ToDoListState extends State<ToDoList> {
                           onChanged: (bool? value) {
                             setState(() {
                               autoAssignChecked = value!;
-                              // _getRandomUser().then(selectedUser);
                             });
                           }
                         ),
                         const Text('Auto-assign this task'),
+                        IconButton(
+                          icon: const Icon(Icons.question_mark),
+                          onPressed: () {
+                            _showAutoAssignDialog(context);
+                          },
+                        )
                       ],
                     ),
                     Row(
@@ -298,24 +382,52 @@ class _ToDoListState extends State<ToDoList> {
                             Text('Deadline: $selectedDate'),
                         ],
                       ),
-                  ],
+                      Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: editedTimelength,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        editedTimelength = newValue;
+                      });
+                    },
+                    items: _timelengths.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    hint: const Text('Select Time Est. (default 15min)'),
+                  ),
+                ],
+              ),
+            ],
                 ),
               ),
               actions: [
                 ElevatedButton(
                   onPressed: () {
-                    // Save the edited chore details and close the dialog
-                    Navigator.of(context).pop();
                     Timestamp? deadline = selectedDate != null
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
-                    _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+
+                    if (editedTimelength == null) {
+                      editedTimelength = '15m';
+                    }
+
+                    if (editedChoreName.isNotEmpty) {
+                      if (editedAssignee != null || autoAssignChecked) {
+                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline, editedTimelength);
+                        Navigator.of(context).pop();
+                      }
+                    }
+
+
                   },
                   child: const Text('Save'),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Close the dialog without saving
                     Navigator.of(context).pop();
                   },
                   child: const Text('Cancel'),
@@ -359,49 +471,73 @@ class _ToDoListState extends State<ToDoList> {
                 }).toList(),
                 hint: const Text('Select Assignee'),
               ),
-             Row(
-              children: [
-                Checkbox(
-                  value: autoAssignChecked,
-                  onChanged: (bool? value) {
-                    setState(() =>
-                      autoAssignChecked = value!);
-                  },
-                ),
-                const Text('Auto-assign this task'),
-              ],
-            ),
-            Row(
-              children: [
-                const Text('Select Deadline: '),
-                ElevatedButton(
-                  onPressed: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2101),
-                    );
+              Row(
+                children: [
+                  Checkbox(
+                    value: autoAssignChecked,
+                    onChanged: (bool? value) {
+                      setState(() =>
+                        autoAssignChecked = value!);
+                    },
+                  ),
+                  const Text('Auto-assign this task'),
+                  IconButton(
+                          icon: const Icon(Icons.question_mark),
+                          onPressed: () {
+                            _showAutoAssignDialog(context);
+                          },
+                        )
+                ],
+              ),
+              Row(
+                children: [
+                  const Text('Select Deadline: '),
+                  ElevatedButton(
+                    onPressed: () async {
+                      DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2101),
+                      );
 
-                    if (pickedDate != null &&
-                        pickedDate != selectedDate) {
+                      if (pickedDate != null &&
+                          pickedDate != selectedDate) {
+                        setState(() {
+                          selectedDate = pickedDate;
+                        });
+                      }
+                    },
+                    child: Text(selectedDate != null
+                        ? 'Change Deadline'
+                        : 'Set Deadline...'),
+                  ),
+                  if (selectedDate != null) Text('Deadline: $selectedDate'),
+                ],
+              ),
+              Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedTimelength,
+                    onChanged: (String? newValue) {
                       setState(() {
-                        selectedDate = pickedDate;
+                        selectedTimelength = newValue;
                       });
-                    }
-                  },
-                  child: Text(selectedDate != null
-                      ? 'Change Deadline'
-                      : 'Set Deadline...'),
-                ),
-                if (selectedDate != null) Text('Deadline: $selectedDate'),
-              ],
-            ),
-            ],
-          );
-            },
-          ),
-           
+                    },
+                    items: _timelengths.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    hint: const Text('Select Time Est. (default 15min)'),
+                  ),
+                ],
+              ),
+          ],
+        );
+      },
+      ),
           actions: [
             TextButton(
               onPressed: () {
@@ -412,19 +548,20 @@ class _ToDoListState extends State<ToDoList> {
             TextButton(
               onPressed: () {
                 String choreName = titleController.text.trim();
-                // String assignee = assigneeController.text.trim();
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
+
+                if (selectedTimelength == null) {
+                  selectedTimelength = '15m';
+                }
 
                 if (choreName.isNotEmpty){
                   if (selectedUser != null || autoAssignChecked){
-                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);
+                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline, selectedTimelength);
+                    Navigator.of(context).pop();
                   }
-                //   else if (assignee.isNotEmpty){
-                //      _addChoreToFirestore(choreName, assignee, deadline);
-                //   }
                 }
 
-                Navigator.of(context).pop();
+                
               },
               child: const Text('Add'),
             ),
@@ -433,5 +570,32 @@ class _ToDoListState extends State<ToDoList> {
       },
     );
   }
+
+  void _showAutoAssignDialog(BuildContext context){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Auto-Assign has 3 phases.'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+          return RichText(
+            text: const TextSpan(
+              children: [
+                TextSpan(text: '1. Assigns to the roommate with the least chores assigned.\n'),
+                TextSpan(text: '2. A modified Adjusted Winner procedure assigns to the "winner" of [chore]\'s category based on their set preferences.\n'),
+                TextSpan(text: '3. A fail-safe assigns to a roommate at random.\n\n'),
+                TextSpan(text: 'A phase executes if the previous phase does not return a decisive roommate.\n'),
+                TextSpan(text: "More information about the Adjusted Winner procedure can be found online.")
+              ],
+            ),
+          );
+            },
+          ),
+        );
+  }
+    );
+      
+}
 }
                 

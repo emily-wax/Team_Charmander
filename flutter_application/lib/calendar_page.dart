@@ -33,11 +33,10 @@ class _CalendarPageState extends State<CalendarPage> {
     super.initState();
     _calendarView = CalendarView.day;
     _updateDisplayDate();
-   // _getHouseholdId(); // Fetch household ID when widget initializes
-   
   }
 
-    Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shared Calendar'),
@@ -45,15 +44,14 @@ class _CalendarPageState extends State<CalendarPage> {
           IconButton(
             icon: const Icon(Icons.home),
             onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+              );
             },
           )
         ],
       ),
-
       body: FutureBuilder<UserModel>(
         future: readData(),
         builder: (context, snapshot) {
@@ -71,79 +69,57 @@ class _CalendarPageState extends State<CalendarPage> {
             return buildCalendarPage(); // Build the main content of the page
           }
         },
-      ), 
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: _handleAddEvent,
+      ),
     );
   }
 
-
-  Widget buildCalendarPage () {
+  Widget buildCalendarPage() {
     return Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('households')
-                  .doc(_householdId) // Use the household ID obtained from Firestore
-                  .collection('events')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                final events = snapshot.data!.docs;
-                List<Widget> eventWidgets = [];
-
-                for (var event in events) {
-                  var eventData = event.data() as Map<String, dynamic>;
-                  var startTime = eventData['start'].toDate(); // Convert Firestore Timestamp to DateTime
-                  var endTime = eventData['end'].toDate(); // Convert Firestore Timestamp to DateTime
-                  var eventName = eventData['name'];
-
-                  var eventWidget = ListTile(
-                    title: Text(eventName),
-                    subtitle: Text('Start: $startTime | End: $endTime'),
-                    // Add more details or customize the appearance of the event widget as needed
-                  );
-                  eventWidgets.add(eventWidget);
-                }
-
-                return ListView(
-                  children: eventWidgets,
+      children: [
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('households')
+                .doc(_householdId) // Use the household ID obtained from Firestore
+                .collection('events')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(),
                 );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: _handleAddEvent,
-              child: const Text('Add Event'),
-            ),
-          ),
-          FloatingActionButton(
-            child: const Icon(Icons.add),
-            onPressed: _handleAddEvent,
-          )
-        ],
-      );
+              }
 
+              final events = snapshot.data!.docs;
+              List<Widget> eventWidgets = [];
+
+              for (var event in events) {
+                var eventData = event.data() as Map<String, dynamic>;
+                var startTime = eventData['start'].toDate(); // Convert Firestore Timestamp to DateTime
+                var endTime = eventData['end'].toDate(); // Convert Firestore Timestamp to DateTime
+                var eventName = eventData['name'];
+
+                var eventWidget = ListTile(
+                  title: Text(eventName),
+                  subtitle: Text('Start: $startTime | End: $endTime'),
+                  // Add more details or customize the appearance of the event widget as needed
+                );
+                eventWidgets.add(eventWidget);
+              }
+
+              return ListView(
+                children: eventWidgets,
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
-
-  // Future<void> _getHouseholdId() async {
-  //   UserModel currUserModel = await readData();
-  //   if(currUserModel.id != null){
-  //     HouseholdModel currHouseModel = HouseholdModel.fromSnapshot(
-  //         await FirebaseFirestore.instance
-  //             .collection('households')
-  //             .doc(currUserModel.currHouse)
-  //             .get());
-
-  //     _householdId = currHouseModel.name;
-  //   }
-  // }
 
   void _handleAddEvent() {
     showDialog(
@@ -162,23 +138,116 @@ class _CalendarPageState extends State<CalendarPage> {
                 onChanged: (value) => eventName = value,
               ),
               const SizedBox(height: 16.0),
-              // Time selection widgets...
-              // TODO: input time selection widgets
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Start Time'),
+                      GestureDetector(
+                        onTap: () async {
+                          final selectedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                            builder: (context, child) {
+                              return MediaQuery(
+                                data: MediaQuery.of(context).copyWith(
+                                  alwaysUse24HourFormat: false,
+                                ),
+                                child: child ?? const SizedBox.shrink(),
+                              );
+                            },
+                            initialEntryMode: TimePickerEntryMode.input,
+                            hourLabelText: 'Hour',
+                            minuteLabelText: 'Minute',
+                          );
+                          if (selectedTime != null) {
+                            setState(() {
+                              _startTime = selectedTime;
+                            });
+                          }
+                        },
+                        child: Text(
+                          _startTime?.format(context) ?? 'Select Start Time',
+                          style: const TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('End Time'),
+                      GestureDetector(
+                        onTap: () async {
+                          final selectedTime = await showTimePicker(
+                            context: context,
+                            initialTime: _startTime?.replacing(hour: _startTime!.hour + 1) ??
+                                TimeOfDay.now(),
+                            builder: (context, child) {
+                              return MediaQuery(
+                                data: MediaQuery.of(context).copyWith(
+                                  alwaysUse24HourFormat: false,
+                                ),
+                                child: child ?? const SizedBox.shrink(),
+                              );
+                            },
+                            initialEntryMode: TimePickerEntryMode.input,
+                            hourLabelText: 'Hour',
+                            minuteLabelText: 'Minute',
+                          );
+                          if (selectedTime != null) {
+                            setState(() {
+                              _endTime = selectedTime;
+                            });
+                          }
+                        },
+                        child: Text(
+                          _endTime?.format(context) ?? 'Select End Time',
+                          style: const TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
           actions: [
             // Cancel button...
             ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
               onPressed: () async {
-                /* TODO:add start and end time back */
-                if (eventName != null) {
+                if (eventName != null && _startTime != null && _endTime != null) {
                   final selectedDate = _calendarController.selectedDate;
                   if (selectedDate != null) {
                     UserModel currUserModel = await readData();
                     final event = {
                       'name': eventName,
-                      'start': _startTime!.format(context),
-                      'end': _endTime!.format(context),
+                      'start': DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                        _startTime!.hour,
+                        _startTime!.minute,
+                      ),
+                      'end': DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                        _endTime!.hour,
+                        _endTime!.minute,
+                      ),
                       'user': currUserModel.email, // Placeholder for user name, replace with actual user name
                     };
 
@@ -198,7 +267,6 @@ class _CalendarPageState extends State<CalendarPage> {
       },
     );
   }
-
 
   void _updateDisplayDate() {
     final now = DateTime.now();

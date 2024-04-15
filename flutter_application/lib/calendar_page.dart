@@ -6,6 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth for us
 import 'user_model.dart';
 import 'package:flutter_application/household_model.dart';
 import 'HomePage.dart';
+import "theme_provider.dart";
+import 'package:provider/provider.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({Key? key}) : super(key: key);
@@ -48,6 +52,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shared Calendar'),
@@ -84,8 +90,9 @@ class _CalendarPageState extends State<CalendarPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
         onPressed: _handleAddEvent,
+        backgroundColor: themeProvider.buttonColor,
       ),
     );
   }
@@ -143,9 +150,17 @@ void _handleAppointmentTap(Appointment appointment) {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
+              cursorColor: theme.buttonColor,
+              style: TextStyle(color: theme.textColor),
               initialValue: eventName,
               onChanged: (value) => eventName = value,
-              decoration: InputDecoration(labelText: 'Event Name'),
+              decoration: InputDecoration(
+                labelText: 'Event Name',
+                labelStyle: TextStyle(color: theme.buttonColor),
+                focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                    ),
+                ),
             ),
             Text(
               'Note: You can only update/delete events you created.',
@@ -158,6 +173,9 @@ void _handleAppointmentTap(Appointment appointment) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.buttonColor
+                          ),
                           onPressed: () async {
                             final selectedDate = await showDatePicker(
                               context: context,
@@ -178,7 +196,7 @@ void _handleAppointmentTap(Appointment appointment) {
                               }
                             }
                           },
-                          child: const Text('Start'),
+                          child: Text('Start', style: TextStyle(color: theme.textColor),),
                         ),
                       ],
                     ),
@@ -186,6 +204,9 @@ void _handleAppointmentTap(Appointment appointment) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.buttonColor
+                          ),
                           onPressed: () async {
                             final selectedDate = await showDatePicker(
                               context: context,
@@ -207,7 +228,7 @@ void _handleAppointmentTap(Appointment appointment) {
                               }
                             }
                           },
-                          child: const Text('End'),
+                          child: Text('End', style: TextStyle(color: theme.textColor),),
                         ),
                       ],
                     ),
@@ -217,12 +238,18 @@ void _handleAppointmentTap(Appointment appointment) {
         ),
         actions: <Widget>[
           TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: theme.buttonColor
+            ),
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: theme.textColor),),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.buttonColor
+                          ),
             onPressed: () async {
               // Perform update logic here
               UserModel? currentUserModel = await readData();
@@ -264,13 +291,16 @@ void _handleAppointmentTap(Appointment appointment) {
                 );
               }
             },
-            child: Text('Update'),
+            child: Text('Update', style: TextStyle(color: theme.textColor)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.buttonColor
+                          ),
             onPressed: () async {
               _showDeleteConfirmationDialog(appointment);
             },
-            child: Text('Delete'),
+            child: Text('Delete', style: TextStyle(color: theme.textColor)),
           ),
         ],
       );
@@ -298,12 +328,18 @@ void _handleAppointmentTap(Appointment appointment) {
         ),
           actions: <Widget>[
             TextButton(
+              style: TextButton.styleFrom(
+              backgroundColor: theme.buttonColor
+            ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: theme.textColor)),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+              backgroundColor: theme.buttonColor
+            ),
               onPressed: () async {
                 // Delete the event from Firestore
                 await _firestore
@@ -326,7 +362,7 @@ void _handleAppointmentTap(Appointment appointment) {
 
                 Navigator.of(context).pop();
               },
-              child: Text('Delete'),
+              child: Text('Delete', style: TextStyle(color: theme.textColor)),
             ),
           ],
         );
@@ -352,8 +388,14 @@ void _handleAppointmentTap(Appointment appointment) {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
+                cursorColor: theme.buttonColor,
                 controller: _eventNameController,
-                decoration: const InputDecoration(labelText: 'Event Name'),
+                decoration: InputDecoration(labelText: 'Event Name',
+                labelStyle: TextStyle(color: theme.buttonColor),
+                focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                    ),
+                ),
                 onChanged: (value) => eventName = value,
               ),
               const SizedBox(height: 16.0),
@@ -364,6 +406,7 @@ void _handleAppointmentTap(Appointment appointment) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                         onPressed: () async {
                           final selectedDate = await showDatePicker(
                             context: context,
@@ -384,7 +427,7 @@ void _handleAppointmentTap(Appointment appointment) {
                             }
                           }
                         },
-                        child: const Text('Start'),
+                        child: Text('Start', style: TextStyle(color: theme.textColor),),
                       ),
                     ],
                   ),
@@ -392,6 +435,7 @@ void _handleAppointmentTap(Appointment appointment) {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                         onPressed: () async {
                           final selectedDate = await showDatePicker(
                             context: context,
@@ -413,7 +457,7 @@ void _handleAppointmentTap(Appointment appointment) {
                             }
                           }
                         },
-                        child: const Text('End'),
+                        child: Text('End', style: TextStyle(color: theme.textColor),),
                       ),
                     ],
                   ),
@@ -421,17 +465,20 @@ void _handleAppointmentTap(Appointment appointment) {
               ),
             ],
           ),
+          
           actions: [
             // Cancel button...
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
                 _eventNameController.clear();
                 _calendarController.dispose();
                 Navigator.of(context).pop();
               },
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: theme.textColor),),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () async {
                 
                 // check if name is unique
@@ -505,7 +552,7 @@ void _handleAppointmentTap(Appointment appointment) {
 
                 Navigator.of(context).pop();
               },
-              child: const Text('Add'),
+              child: Text('Add', style: TextStyle(color: theme.textColor),),
             ),
           ],
         );

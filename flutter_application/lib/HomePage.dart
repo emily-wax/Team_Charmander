@@ -5,11 +5,18 @@ import 'chores_page.dart';
 import 'appliances_page.dart';
 import 'calendar_page.dart'; // Import the CalendarPage
 import 'package:firebase_auth/firebase_auth.dart';
+import 'theme_provider.dart'; // Import your themes file
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart';
+
 
 class HomePage extends StatelessWidget {
+  
   const HomePage({Key? key});
-
-  void _logout( BuildContext context ) async {
+  final bool _isThemeInitialized = false;
+  
+  void _logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
       // Navigate to the login screen or any other screen you want after logout
@@ -26,6 +33,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Welcome Home'),
@@ -38,33 +46,29 @@ class HomePage extends StatelessWidget {
           ),
           Tooltip(
             message: 'Log out',
-            child: IconButton( 
+            child: IconButton(
               icon: Icon(Icons.logout),
-              onPressed:() => _logout(context),
-            ), 
+              onPressed: () => _logout(context),
+            ),
           )
         ],
       ),
       body: Container(
-        color: Colors.yellow[200],
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.house,
                 size: 100,
-                color: Colors.green,
+                color: themeProvider.selectedTheme.iconTheme.color, // Use theme icon color
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 'Welcome to Your House!',
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Theme.of(context).primaryColor,
-                ),
+                style: themeProvider.selectedTheme.textTheme.headline6, // Use theme text style
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -72,12 +76,15 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => ToDoList()),
                   );
                 },
-                child: const Text(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.buttonColor, // Use theme background color
+                ),
+                child: Text(
                   'Chores',
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -85,12 +92,15 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => AccountPage()),
                   );
                 },
-                child: const Text(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.buttonColor// Use theme background color
+                ),
+                child: Text(
                   'Account',
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -98,12 +108,15 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => AppliancesPage()),
                   );
                 },
-                child: const Text(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.buttonColor, // Use theme background color
+                ),
+                child: Text(
                   'Appliances',
-                  style: TextStyle(fontSize: 20),
+                  style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
@@ -111,11 +124,14 @@ class HomePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const CalendarPage()),
                   );
                 },
-                child: const Text(
-                  'Calendar',
-                  style: TextStyle(fontSize: 20),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeProvider.buttonColor, // Use theme background color
                 ),
-              ),             
+                child: Text(
+                  'Calendar',
+                  style: TextStyle(fontSize: 20, color: Colors.white),
+                ),
+              ),
             ],
           ),
         ),
@@ -123,3 +139,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+

@@ -5,6 +5,7 @@ import 'household_join.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
 import 'HomePage.dart';
+import 'SignInPage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -30,6 +31,21 @@ class _AccountPageState extends State<AccountPage> {
     super.initState();
     _fetchHouseholdsForCurrentUser();
   }
+
+  void _logout(BuildContext context) async {
+  try {
+    await FirebaseAuth.instance.signOut();
+    // Navigate to the login screen or any other screen you want after logout
+    // For example:
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const SignInPage()),
+    );
+  } catch (e) {
+    print('Error logging out: $e');
+    // Show a snackbar or an alert dialog to indicate the error to the user
+  }
+}
 
 Future<void> updateUserHousehold(String? userId, String householdName) async {
 
@@ -142,14 +158,12 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
       appBar: AppBar(
         title: Text('Account Page'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-            },
+          Tooltip(
+            message: 'Log out',
+            child: IconButton( 
+              icon: const Icon(Icons.logout),
+              onPressed:() => _logout(context),
+            ), 
           )
         ],
       ),

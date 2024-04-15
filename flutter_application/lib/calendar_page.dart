@@ -115,8 +115,75 @@ class _CalendarPageState extends State<CalendarPage> {
     _eventDataSource.appointments!.addAll(appointments);
 
     return SfCalendar(
-      view: CalendarView.day,
+      view: CalendarView.week,
       dataSource: _eventDataSource,
+      onTap: (CalendarTapDetails details) {
+        if (details.targetElement == CalendarElement.appointment) {
+          // Get the tapped appointment
+          Appointment tappedAppointment = details.appointments![0];
+          _handleAppointmentTap(tappedAppointment);
+        }
+      },
+    );
+  }
+
+  void _handleAppointmentTap(Appointment appointment) {
+    _showDeleteConfirmationDialog(appointment);
+  }
+
+  void _showDeleteConfirmationDialog(Appointment appointment) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Event?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${appointment.subject}"?'),
+            SizedBox(height: 8),
+            Text(
+              'Note: You can only delete events you created.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Delete the event from Firestore
+                await _firestore
+                    .collection('households')
+                    .doc(currUserModel!.currHouse)
+                    .collection('events')
+                    .where('name', isEqualTo: appointment.subject)
+                    .where('user', isEqualTo: currUserModel!.email)
+                    .get()
+                    .then((snapshot) {
+                  snapshot.docs.forEach((doc) {
+                    doc.reference.delete();
+                  });
+                });
+
+                // Remove the event from the calendar
+                setState(() {
+                  _eventDataSource.appointments!.remove(appointment);
+                });
+
+                Navigator.of(context).pop();
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -125,6 +192,7 @@ class _CalendarPageState extends State<CalendarPage> {
       context: context,
       builder: (BuildContext context) {
         String? eventName;
+        // TODO: have unique event name
 
         return AlertDialog(
           title: const Text('Add Event'),
@@ -221,6 +289,8 @@ class _CalendarPageState extends State<CalendarPage> {
             // Cancel button...
             ElevatedButton(
               onPressed: () {
+                _eventNameController.clear();
+                _calendarController.dispose();
                 Navigator.of(context).pop();
               },
               child: const Text('Cancel'),
@@ -283,6 +353,9 @@ class _CalendarPageState extends State<CalendarPage> {
                         .add(event);
                   }
                 }
+                _eventNameController.clear();
+                _calendarController.dispose();
+                
                 Navigator.of(context).pop();
               },
               child: const Text('Add'),

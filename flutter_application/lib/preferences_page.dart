@@ -131,6 +131,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I like to maintain household items"),
         Slider(
           value: _maintainValue,
+          activeColor: theme.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _maintainValue = newValue; // Update the value here

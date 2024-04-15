@@ -7,11 +7,15 @@ import 'calendar_page.dart'; // Import the CalendarPage
 import 'package:firebase_auth/firebase_auth.dart';
 import 'theme_provider.dart'; // Import your themes file
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_model.dart';
 
 
 class HomePage extends StatelessWidget {
+  
   const HomePage({Key? key});
-
+  final bool _isThemeInitialized = false;
+  
   void _logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
@@ -136,6 +140,3 @@ class HomePage extends StatelessWidget {
   }
 }
 
-void addTheme() {
-  
-}

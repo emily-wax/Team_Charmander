@@ -11,12 +11,12 @@ class ThemeProvider extends ChangeNotifier {
   ThemeProvider() {
     _selectedTheme = fetchLightTheme(); // Set default theme
     inputColor = Colors.black;
-    _initializeTheme(); // Initialize theme based on user preference
+    initializeTheme(); // Initialize theme based on user preference
   }
 
   ThemeData get selectedTheme => _selectedTheme; // Getter for selected theme
 
-  Future<void> _initializeTheme() async {
+Future<void> initializeTheme() async {
   try {
     UserModel currUserModel = await readData();
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -34,8 +34,10 @@ class ThemeProvider extends ChangeNotifier {
     _selectedTheme = fetchLightTheme();
   }
 
+  // Only notify listeners if the theme has been successfully initialized
   notifyListeners();
 }
+
 
   void toggleTheme() {
     _selectedTheme =

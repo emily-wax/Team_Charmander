@@ -1,3 +1,5 @@
+// import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -317,7 +319,7 @@ Widget buildChoresPage() {
                             });
                           }
                         ),
-                        Text('Auto-assign this task', style: TextStyle(color: theme.inputColor)),
+                        const Text('Auto-assign this task'),
                         IconButton(
                           icon: const Icon(Icons.question_mark),
                           onPressed: () {

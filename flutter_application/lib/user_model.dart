@@ -22,6 +22,8 @@ class UserModel{
     );
   }
 
+  String? get _id => id;
+
   Map<String, dynamic> toJson(){
     return{
       "id": id,

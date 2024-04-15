@@ -37,19 +37,18 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _fetchUserModel() async {
-
-  try {
-    currUserModel = await readData();
-    setState(() {}); // Trigger a rebuild after getting the user model
-  } catch (error) {
-    // Handle error here, such as displaying an error message or retrying
-    print('Error fetching user data: $error');
-  }
+    try {
+      currUserModel = await readData();
+      setState(() {}); // Trigger a rebuild after getting the user model
+    } catch (error) {
+      // Handle error here, such as displaying an error message or retrying
+      print('Error fetching user data: $error');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-   return Scaffold(
+    return Scaffold(
       appBar: AppBar(
         title: const Text('Shared Calendar'),
         actions: [
@@ -67,11 +66,11 @@ class _CalendarPageState extends State<CalendarPage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('households')
-            .doc(currUserModel!.currHouse)
+            .doc(currUserModel?.currHouse)
             .collection('events')
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || currUserModel == null) {
             return const Center(
               child: CircularProgressIndicator(),
             );
@@ -84,26 +83,27 @@ class _CalendarPageState extends State<CalendarPage> {
           return buildCalendarPage(snapshot.data);
         },
       ),
-      floatingActionButton:  FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
         onPressed: _handleAddEvent,
       ),
     );
   }
 
-
-
-
-Widget buildCalendarPage( QuerySnapshot? snapshot ) {
-
-   if (snapshot == null || snapshot.docs.isEmpty) {
+  Widget buildCalendarPage(QuerySnapshot? snapshot) {
+    if (snapshot == null || currUserModel == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    if (snapshot.docs.isEmpty) {
       return const Center(
         child: Text('No events available'),
       );
     }
 
     List<Appointment> appointments = snapshot.docs.map((doc) {
-       Map<String, dynamic> data = (doc.data() as Map<String, dynamic>);
+      Map<String, dynamic> data = (doc.data() as Map<String, dynamic>);
       return Appointment(
         startTime: data['start'].toDate(),
         endTime: data['end'].toDate(),
@@ -119,7 +119,6 @@ Widget buildCalendarPage( QuerySnapshot? snapshot ) {
       dataSource: _eventDataSource,
     );
   }
-
 
   void _handleAddEvent() {
     showDialog(
@@ -252,30 +251,30 @@ Widget buildCalendarPage( QuerySnapshot? snapshot ) {
                     };
 
                     final startTime = DateTime(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                        _startTime!.hour,
-                        _startTime!.minute,
-                      );
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      _startTime!.hour,
+                      _startTime!.minute,
+                    );
 
                     final endTime = DateTime(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day,
-                        _endTime!.hour,
-                        _endTime!.minute,
-                      );
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      _endTime!.hour,
+                      _endTime!.minute,
+                    );
 
-                      final appointment = Appointment(
-                        endTime: endTime,
-                        startTime: startTime,
-                        subject: eventName!
-                      );
+                    final appointment = Appointment(
+                      endTime: endTime,
+                      startTime: startTime,
+                      subject: eventName!,
+                    );
 
-                      setState(() {
-                        _eventDataSource.appointments?.add(appointment);
-                      });
+                    setState(() {
+                      _eventDataSource.appointments?.add(appointment);
+                    });
 
                     await _firestore
                         .collection('households')

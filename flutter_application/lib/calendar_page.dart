@@ -127,9 +127,156 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _handleAppointmentTap(Appointment appointment) {
-    _showDeleteConfirmationDialog(appointment);
-  }
+void _handleAppointmentTap(Appointment appointment) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      String eventName = appointment.subject ?? '';
+      DateTime startDate = appointment.startTime ?? DateTime.now();
+      TimeOfDay startTime = TimeOfDay.fromDateTime(startDate);
+      DateTime endDate = appointment.endTime ?? DateTime.now();
+      TimeOfDay endTime = TimeOfDay.fromDateTime(endDate);
+
+      return AlertDialog(
+        title: Text('Update Event'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: eventName,
+              onChanged: (value) => eventName = value,
+              decoration: InputDecoration(labelText: 'Event Name'),
+            ),
+            Text(
+              'Note: You can only update/delete events you created.',
+              style: TextStyle(color: Colors.grey),
+            ),
+            Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () async {
+                            final selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate: startDate ?? DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (selectedDate != null) {
+                              final selectedTime = await showTimePicker(
+                                context: context,
+                                initialTime: startTime ?? TimeOfDay.now(),
+                              );
+                              if (selectedTime != null) {
+                                setState(() {
+                                  startDate = selectedDate;
+                                  startTime = selectedTime;
+                                });
+                              }
+                            }
+                          },
+                          child: const Text('Start'),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () async {
+                            final selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate: startDate ?? DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (selectedDate != null) {
+                              final selectedTime = await showTimePicker(
+                                context: context,
+                                initialTime: startTime?.replacing(hour: startTime!.hour + 1) ??
+                                  TimeOfDay.now(),
+                              );
+                              if (selectedTime != null) {
+                                setState(() {
+                                  endDate = selectedDate;
+                                  endTime = selectedTime;
+                                });
+                              }
+                            }
+                          },
+                          child: const Text('End'),
+                        ),
+                      ],
+                    ),
+                  ],
+              ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Perform update logic here
+              UserModel? currentUserModel = await readData();
+              if (eventName.isNotEmpty) {
+                final updatedEvent = {
+                  'name': eventName,
+                  'start': DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute),
+                  'end': DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute),
+                  'user': currentUserModel?.email,
+                };
+
+                QuerySnapshot snapshot = await FirebaseFirestore.instance
+                    .collection('households')
+                    .doc(currentUserModel!.currHouse)
+                    .collection('events')
+                    .where('name', isEqualTo: appointment.subject)
+                    .where('user', isEqualTo: currUserModel?.email)
+                    .get();
+
+                // Iterate over the documents and update each one
+                snapshot.docs.forEach((doc) {
+                  // Get the reference to the document and call .update on it
+                  doc.reference.update(updatedEvent);
+                });
+
+                // Update event in the calendar
+                setState(() {
+                  appointment.subject = eventName;
+                  appointment.startTime = DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute);
+                  appointment.endTime = DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute);
+                });
+
+                Navigator.of(context).pop(); // Close the dialog
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Event name cannot be empty'),
+                  ),
+                );
+              }
+            },
+            child: Text('Update'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              _showDeleteConfirmationDialog(appointment);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _showDeleteConfirmationDialog(Appointment appointment) {
     showDialog(
@@ -198,7 +345,6 @@ class _CalendarPageState extends State<CalendarPage> {
       context: context,
       builder: (BuildContext context) {
         String? eventName;
-        // TODO: have unique event name
 
         return AlertDialog(
           title: const Text('Add Event'),

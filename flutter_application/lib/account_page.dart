@@ -164,6 +164,12 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               await documentSnapshot.reference.delete();
             }
 
+            QuerySnapshot eventsSnapshot = await currHouseRef.collection('events').get();
+
+            for (QueryDocumentSnapshot documentSnapshot in eventsSnapshot.docs) {
+              await documentSnapshot.reference.delete();
+            }
+
             await currHouseRef.delete().then((_) {
               setState(() {
                 _fetchHouseholdsForCurrentUser();
@@ -301,9 +307,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             ),
             TextFormField(
               style: TextStyle(color: theme.inputColor),
-              cursorColor: theme.buttonColor,
               controller: _passwordController,
-              keyboardType: TextInputType.visiblePassword,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled

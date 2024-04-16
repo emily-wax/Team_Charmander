@@ -36,9 +36,10 @@ class _SignInPageState extends State<SignInPage> {
           key: _formKey,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                isSignUp ? 'Sign Up' : 'Sign In',
+                isSignUp ? 'Welcome to RoomiePal!' : 'Sign In to Your Account',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -77,6 +78,13 @@ class _SignInPageState extends State<SignInPage> {
                 },
               ),
               const SizedBox(height: 20),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                "Password must be at least 6 characters.",
+                textAlign: TextAlign.left
+                ),
+              ),
               ElevatedButton(
                 onPressed: isLoading ? null : () => _authenticate(),
                 style: ElevatedButton.styleFrom(

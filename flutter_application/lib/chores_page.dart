@@ -24,19 +24,18 @@ class _ToDoListState extends State<ToDoList> {
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline) {
+  void _addChoreToFirestoreDrop(String choreName, String? assignee, Timestamp? deadline, String? timelength) {
     if (autoAssignChecked){
-      debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result){
         setState(() {
           assignee = result;
-          debugPrint("assignee $assignee");
           FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').add({
             'choreName': choreName,
             'assignee': assignee,
             'isCompleted': false,
             'deadline': deadline,
+            'timelength': timelength,
           });
         });
       });      
@@ -47,14 +46,17 @@ class _ToDoListState extends State<ToDoList> {
         'assignee': assignee,
         'isCompleted': false,
         'deadline': deadline,
+        'timelength': timelength,
       });
     }
     selectedUser = null;
     selectedDate = null;
+    selectedTimelength = null;
+    autoAssignChecked = false;
     
   }
 
-  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline ) async {
+  void _updateChoreInFirestore(String choreId, String choreName, String? assignee, Timestamp? deadline, String? timelength) async {
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -66,6 +68,7 @@ class _ToDoListState extends State<ToDoList> {
           'choreName': choreName,
           'assignee': assignee,
           'deadline': deadline,
+          'timelength': timelength,
           });
         });
       });
@@ -75,6 +78,7 @@ class _ToDoListState extends State<ToDoList> {
         'choreName': choreName,
         'assignee': assignee,
         'deadline': deadline,
+        'timelength': timelength,
       });
     }
   }
@@ -83,8 +87,7 @@ class _ToDoListState extends State<ToDoList> {
     FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).delete();
   }
 
-  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser) {
-    debugPrint("reassignment in progress");
+  void _reassignChoreOnClaim(String choreName, String choreId, String assignee, DateTime? deadline, String? newAssigneeUser, String timelength) {
     FirebaseFirestore.instance
         .collection('households')
         .doc(currUserModel!.currHouse)
@@ -94,8 +97,8 @@ class _ToDoListState extends State<ToDoList> {
       'choreName': choreName,
       'assignee': newAssigneeUser,
       'deadline': deadline,
+      'timelength': timelength,
     });
-    debugPrint("reassignment done!");
   }
 
   @override
@@ -131,7 +134,9 @@ class _ToDoListState extends State<ToDoList> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
+  String? selectedTimelength;
   List<String> _users = [];
+  final List<String> _timelengths = ['5m', '10m', '15m', '30m', '60m'];
 
   @override
   Widget build(BuildContext context) {
@@ -162,105 +167,257 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 
-Widget buildChoresPage() {
+  Widget buildChoresPage() {
     String formattedDate = "";
     bool assigneeMatchesCurrUser = false;
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData) {
-        return Center(
-          child: CircularProgressIndicator(),
-        );
-      }
-      var chores = snapshot.data!.docs;
-      return ListView.builder(
-        padding: EdgeInsets.all(8),
-        itemCount: chores.length,
-        itemBuilder: (context, index) {
-          var choreData = chores[index].data() as Map<String, dynamic>;
-          var choreId = chores[index].id;
-          var choreName = choreData['choreName'];
-          var assignee = choreData['assignee'];
-          var isCompleted = choreData['isCompleted'];
-          var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('households')
+          .doc(currUserModel!.currHouse)
+          .collection('chores')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+        var chores = snapshot.data!.docs;
+        List<Widget> choreWidgets = [];
 
-                    if (deadline != null){
-                      formattedDate =
-                      '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
-                    }
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(8),
+                itemCount: chores.length,
+                itemBuilder: (context, index) {
+                  var choreData = chores[index].data() as Map<String, dynamic>;
+                  var choreId = chores[index].id;
+                  var choreName = choreData['choreName'];
+                  var assignee = choreData['assignee'];
+                  var isCompleted = choreData['isCompleted'];
+                  var deadline = choreData['deadline'] != null
+                      ? (choreData['deadline'] as Timestamp).toDate()
+                      : null;
+                  var timelength = choreData['timelength'];
 
-                    if (assignee == currUserModel!.email){
-                      assigneeMatchesCurrUser = true;
-                    }
-                    else {
-                      assigneeMatchesCurrUser = false;
-                    }
+                  if (deadline != null) {
+                    formattedDate =
+                        '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+                  }
 
-          return Container(
-            margin: EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              title: Row(
-                children: [
-                  Checkbox(
-                    value: isCompleted,
-                    activeColor: theme.buttonColor,
-                    onChanged: (value) {
-                      FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
-                    },
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Task: $choreName',
-                          style: TextStyle(
-                            decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                          ),
-                        ),
-                        Text('Assignee: $assignee'),
-                        if (deadline != null) Text('Deadline: $deadline'),
-                      ],
+                  if (assignee == currUserModel!.email) {
+                    assigneeMatchesCurrUser = true;
+                  } else {
+                    assigneeMatchesCurrUser = false;
+                  }
+
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          _editChore(choreName, choreId, assignee, deadline);
-                        },
+                    child: ListTile(
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      title: Row(
+                        children: [
+                          Checkbox(
+                            value: isCompleted,
+                            activeColor: theme.buttonColor,
+                            onChanged: (value) {
+                              FirebaseFirestore.instance
+                                  .collection('households')
+                                  .doc(currUserModel!.currHouse)
+                                  .collection('chores')
+                                  .doc(choreId)
+                                  .update({'isCompleted': value});
+                            },
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Task: $choreName',
+                                  style: TextStyle(
+                                    decoration: isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
+                                  ),
+                                ),
+                                Text('Assignee: $assignee'),
+                                if (deadline != null)
+                                  Text('Deadline: $deadline'),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              if (!assigneeMatchesCurrUser)
+                                IconButton(
+                                  icon: const Icon(Icons.shopping_cart_rounded),
+                                  onPressed: () {
+                                    _reassignChoreOnClaim(
+                                        choreName,
+                                        choreId,
+                                        assignee,
+                                        deadline,
+                                        currUserModel!.email,
+                                        timelength);
+                                  },
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.edit),
+                                onPressed: () {
+                                  _editChore(choreName, choreId, assignee,
+                                      deadline, timelength);
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () {
+                                  _deleteChore(choreId);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _deleteChore(choreId);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  );
+                },
               ),
             ),
-          );
-        },
-      );
-    },
-  );
-}
+            FloatingActionButton(
+              onPressed: () {
+                assigneeController.clear();
+                titleController.clear();
+                _showAddTaskDialog(context);
+              },
+              child: Icon(Icons.add),
+              backgroundColor: Colors.blue, // Customize as needed
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+// Widget buildChoresPage() {
+//     String formattedDate = "";
+//     bool assigneeMatchesCurrUser = false;
+//     return StreamBuilder<QuerySnapshot>(
+//       stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').snapshots(),
+//       builder: (context, snapshot) {
+//       if (!snapshot.hasData) {
+//         return Center(
+//           child: CircularProgressIndicator(),
+//         );
+//       }
+//       var chores = snapshot.data!.docs;
+//       List<Widget> choreWidgets = [];
+
+//       return ListView.builder(
+//         padding: EdgeInsets.all(8),
+//         itemCount: chores.length,
+//         itemBuilder: (context, index) {
+//           var choreData = chores[index].data() as Map<String, dynamic>;
+//           var choreId = chores[index].id;
+//           var choreName = choreData['choreName'];
+//           var assignee = choreData['assignee'];
+//           var isCompleted = choreData['isCompleted'];
+//           var deadline = choreData['deadline'] != null ? (choreData['deadline'] as Timestamp).toDate() : null;
+//           var timelength = choreData['timelength'];
+
+//                     if (deadline != null){
+//                       formattedDate =
+//                       '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+//                     }
+
+//                     if (assignee == currUserModel!.email){
+//                       assigneeMatchesCurrUser = true;
+//                     }
+//                     else {
+//                       assigneeMatchesCurrUser = false;
+//                     }
+
+//           return Container(
+//             margin: EdgeInsets.only(bottom: 8),
+//             decoration: BoxDecoration(
+//               border: Border.all(color: Colors.grey),
+//               borderRadius: BorderRadius.circular(8),
+//             ),
+//             child: ListTile(
+//               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//               title: Row(
+//                 children: [
+//                   Checkbox(
+//                     value: isCompleted,
+//                     activeColor: theme.buttonColor,
+//                     onChanged: (value) {
+//                       FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('chores').doc(choreId).update({'isCompleted': value});
+//                     },
+//                   ),
+//                   SizedBox(width: 8),
+//                   Expanded(
+//                     child: Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Text(
+//                           'Task: $choreName',
+//                           style: TextStyle(
+//                             decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+//                           ),
+//                         ),
+//                         Text('Assignee: $assignee'),
+//                         if (deadline != null) Text('Deadline: $deadline'),
+//                       ],
+//                     ),
+//                   ),
+//                   Row(
+//                     children: [
+//                       if (!assigneeMatchesCurrUser)
+//                         IconButton(
+//                         icon: const Icon(Icons.shopping_cart_rounded),
+//                         onPressed: () {
+//                           _reassignChoreOnClaim(choreName, choreId, assignee, deadline, currUserModel!.email, timelength);
+//                         }
+//                       ),
+//                       IconButton(
+//                         icon: Icon(Icons.edit),
+//                         onPressed: () {
+//                           _editChore(choreName, choreId, assignee, deadline, timelength);
+//                         },
+//                       ),
+//                       IconButton(
+//                         icon: Icon(Icons.delete),
+//                         onPressed: () {
+//                           _deleteChore(choreId);
+//                         },
+//                       ),
+//                     ],
+//                   ),   
+//                 ],   
+//               ),  
+//             ), 
+//           );
+//         },
+//       ),
+//     },
+//   );
+// }
 
 
 
-  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline) {
+  void _editChore(String choreName, String choreId, String assignee, DateTime? deadline, String timelength) {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
+    String? editedTimelength = timelength;
 
     showDialog(
       context: context,
@@ -355,6 +512,25 @@ Widget buildChoresPage() {
                             Text('Deadline: $selectedDate'),
                         ],
                       ),
+                      Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: editedTimelength,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                editedTimelength = newValue;
+                              });
+                            },
+                            items: _timelengths.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            hint: const Text('Select Time Est. (default 15min)'),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -366,9 +542,13 @@ Widget buildChoresPage() {
                           ? Timestamp.fromDate(selectedDate!)
                           : null;
 
+                    if (editedTimelength == null) {
+                      editedTimelength = '15m';
+                    }
+
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
-                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline);
+                        _updateChoreInFirestore(choreId, editedChoreName, editedAssignee, deadline, timelength);
                         Navigator.of(context).pop();
                       }
                     }
@@ -479,6 +659,25 @@ Widget buildChoresPage() {
                 if (selectedDate != null) Text('Deadline: $selectedDate', style: TextStyle(color: Colors.white),),
               ],
             ),
+            Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedTimelength,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedTimelength = newValue;
+                      });
+                    },
+                    items: _timelengths.map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    hint: const Text('Select Time Est. (default 15min)'),
+                  ),
+                ],
+              ),
             ],
           );
             },
@@ -498,9 +697,14 @@ Widget buildChoresPage() {
                 String choreName = titleController.text.trim();
                 Timestamp? deadline = selectedDate != null ? Timestamp.fromDate(selectedDate!) : null;
 
+                 if (selectedTimelength == null) {
+                  selectedTimelength = '15m';
+                }
+
                 if (choreName.isNotEmpty){
                   if (selectedUser != null || autoAssignChecked){
-                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline);Navigator.of(context).pop();
+                    _addChoreToFirestoreDrop(choreName, selectedUser, deadline, selectedTimelength);
+                    Navigator.of(context).pop();
                   }
                 }
 

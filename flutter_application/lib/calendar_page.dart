@@ -463,7 +463,12 @@ void _handleAppointmentTap(Appointment appointment) {
                   ),
                 ],
               ),
+              Text(
+              'You must enter both a start and end date/time.',
+              style: TextStyle(color: Colors.grey),
+            ),
             ],
+
           ),
           
           actions: [
@@ -538,7 +543,9 @@ void _handleAppointmentTap(Appointment appointment) {
                     );
 
                     setState(() {
+                      
                       _eventDataSource.appointments?.add(appointment);
+                      buildCalendarPage(snapshot);
                     });
 
                     await _firestore
@@ -551,6 +558,10 @@ void _handleAppointmentTap(Appointment appointment) {
                 _calendarController.dispose();
 
                 Navigator.of(context).pop();
+
+                
+
+                
               },
               child: Text('Add', style: TextStyle(color: theme.textColor),),
             ),

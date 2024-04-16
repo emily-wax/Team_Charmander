@@ -6,6 +6,8 @@ import 'account_page.dart';
 import 'HomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class HouseholdJoin extends StatelessWidget{
   @override
@@ -59,8 +61,11 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
+      backgroundColor: themeProvider.selectedTheme.backgroundColor,
       appBar: AppBar(
+        backgroundColor: themeProvider.selectedTheme.backgroundColor,
         title: Text('Household Join Form'),
         actions: [
           IconButton(
@@ -94,7 +99,14 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: themeProvider.buttonColor), // Border color when enabled
+                  ),
+                ),
+                dropdownColor: themeProvider.selectedTheme.backgroundColor,
                 value: selectedHousehold,
+                style: TextStyle(color: themeProvider.inputColor),
                 onChanged: (value) {
                   setState(() {
                     selectedHousehold = value;
@@ -103,15 +115,22 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
                 items: _households.map((String household) {
                   return DropdownMenuItem<String>(
                     value: household,
-                    child: Text(household),
+                    child: Text(household, style: TextStyle(color: themeProvider.inputColor),),
                   );
                 }).toList(),
-                hint: Text('Select Household'),
+                hint: Text('Select Household', style: TextStyle(color: Colors.grey)),
               ),
               TextFormField(
+                style: TextStyle(color: themeProvider.inputColor),
+                cursorColor: themeProvider.buttonColor,
                 controller: _passwordController,
                 decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: themeProvider.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: themeProvider.buttonColor),
                   labelText: 'Household Password',
+                  labelStyle: TextStyle(color: Colors.grey),
                 ),
                 validator: (value) {
                   if(value!.isEmpty) {
@@ -123,6 +142,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor),
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       // Process the data
@@ -132,7 +152,7 @@ class _HouseholdJoinFormState extends State<HouseholdJoinForm> {
                       addToObjectArray(name!, _passwordController.text);
                     }
                   },
-                  child: Text('Submit'),
+                  child: Text('Submit', style: TextStyle(color: themeProvider.textColor)),
                 ),
               ),
             ],

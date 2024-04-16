@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'dart:html';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application/theme_provider.dart';
 import 'user_model.dart';
 // import 'global_variables.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 class PreferenceSlider extends StatefulWidget {
   @override
@@ -15,9 +21,12 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
   double _maintainValue = 0.5;
   double _morningValue = 0.5;
   double _eveningValue = 0.5;
+  bool _darkMode = false;
+  Future<UserModel> currUserModel = readData();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Define the _savePreferences method here
   @override
   void initState() {
     super.initState();
@@ -47,6 +56,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           _maintainValue = sliderPrefs['maintain'] ?? 0.5;
           _morningValue = sliderPrefs['morning'] ?? 0.5;
           _eveningValue = sliderPrefs['evening'] ?? 0.5;
+          _darkMode = documentSnapshot['darkMode'] ?? false;
         });
       } else {
         debugPrint('Document does not exist on the database');
@@ -70,7 +80,8 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           'maintain': _maintainValue,
           'morning': _morningValue,
           'evening': _eveningValue,
-        }
+        },
+        'darkMode': _darkMode,
       }, SetOptions(merge: true));
       // print('Preferences saved successfully!');
     } catch (e) {
@@ -80,12 +91,17 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
+    // stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text("I like to clean"),
         Slider(
+        
         value: _cleanerValue,
+        activeColor: theme.buttonColor,
         onChanged: (newValue) {
           setState(() {
             _cleanerValue = newValue; // Update the value here
@@ -100,6 +116,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I like to organize"),
         Slider(
         value: _organizerValue,
+        activeColor: theme.buttonColor,
         onChanged: (newValue) {
           setState(() {
             _organizerValue = newValue; // Update the value here
@@ -114,6 +131,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I like to maintain household items"),
         Slider(
           value: _maintainValue,
+          activeColor: theme.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _maintainValue = newValue; // Update the value here
@@ -128,6 +146,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I don't mind outdoor chores"),
         Slider(
           value: _outdoorValue,
+          activeColor: theme.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _outdoorValue = newValue; // Update the value here
@@ -142,6 +161,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I want to do chores in the morning"),
         Slider(
           value: _morningValue,
+          activeColor: theme.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _morningValue = newValue; // Update the value here
@@ -156,6 +176,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I want to do chores in the evening"),
         Slider(
           value: _eveningValue,
+          activeColor: theme.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _eveningValue = newValue; // Update the value here
@@ -167,7 +188,27 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
           divisions: 10, // You can adjust the divisions as needed
           // label: 'evening vibes!',
         ),
-        
+        Row(
+        children: [
+        const Text('Dark Mode: '),
+        Switch(
+          value: _darkMode,
+          activeColor: theme.buttonColor,
+          onChanged: (value) {
+            setState(() {
+              _darkMode = value;
+            });
+            _savePreferences();
+            Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // if (value) {
+            //   Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // } else {
+            //   Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            // }
+          },
+        ),
+      ],
+      ),
       ],
     );
   }

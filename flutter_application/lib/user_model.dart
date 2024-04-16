@@ -5,24 +5,29 @@ class UserModel{
   final String? email;
   final String? id;
   final String? currHouse;
+  final bool? darkMode;
   final Map? preferences;
 
-  UserModel( this.id, this.email, this.currHouse, this.preferences );
+  UserModel( this.id, this.email, this.currHouse, this.darkMode, this.preferences );
 
   static UserModel fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot){
     return UserModel(
       snapshot['id'], 
       snapshot['email'], 
       snapshot['currHouse'],
+      snapshot['darkMode'],
       snapshot['slider-prefs']
     );
   }
+
+  String? get _id => id;
 
   Map<String, dynamic> toJson(){
     return{
       "id": id,
       "email": email,
       "currHouse": currHouse,
+      "darkMode": darkMode,
       "slider-prefs": preferences
     };
   }

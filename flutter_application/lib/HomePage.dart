@@ -5,18 +5,30 @@ import 'chores_page.dart';
 import 'appliances_page.dart';
 import 'calendar_page.dart'; // Import the CalendarPage
 import 'package:firebase_auth/firebase_auth.dart';
-import 'theme_provider.dart'; // Import your themes file
-import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'user_model.dart';
+// import 'theme_provider.dart'; // Import your themes file
+// import 'package:provider/provider.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'user_model.dart';
 
-
-class HomePage extends StatelessWidget {
-  
+class HomePage extends StatefulWidget {
   const HomePage({Key? key});
-  final bool _isThemeInitialized = false;
+  // final bool _isThemeInitialized = false;
   
-  void _logout(BuildContext context) async {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late PageController _pageController;
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  void _logout( BuildContext context ) async {
     try {
       await FirebaseAuth.instance.signOut();
       // Navigate to the login screen or any other screen you want after logout
@@ -33,110 +45,57 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    // final themeProvider = Provider.of<ThemeProvider>(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Welcome Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-              print('Home icon pressed!');
-            },
-          ),
-          Tooltip(
-            message: 'Log out',
-            child: IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () => _logout(context),
-            ),
-          )
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        children: [
+          const ToDoList(),
+          const AppliancesPage(),
+          const CalendarPage(),
+          AccountPage(),
         ],
       ),
-      body: Container(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                Icons.house,
-                size: 100,
-                color: themeProvider.selectedTheme.iconTheme.color, // Use theme icon color
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Welcome to Your House!',
-                style: themeProvider.selectedTheme.textTheme.headline6, // Use theme text style
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ToDoList()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeProvider.buttonColor, // Use theme background color
-                ),
-                child: Text(
-                  'Chores',
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AccountPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeProvider.buttonColor// Use theme background color
-                ),
-                child: Text(
-                  'Account',
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AppliancesPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeProvider.buttonColor, // Use theme background color
-                ),
-                child: Text(
-                  'Appliances',
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CalendarPage()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: themeProvider.buttonColor, // Use theme background color
-                ),
-                child: Text(
-                  'Calendar',
-                  style: TextStyle(fontSize: 20, color: Colors.white),
-                ),
-              ),
-            ],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+            _pageController.animateToPage(index,
+                duration: Duration(milliseconds: 300), curve: Curves.ease);
+          });
+        },
+        // selectedItemColor: Color.fromARGB(255, 12, 212, 22), // Color for selected icon and label
+        // unselectedItemColor: Color.fromARGB(255, 12, 212, 22).withOpacity(0.5),
+        selectedItemColor: (Colors.lightBlue.withOpacity(0.75)),
+        unselectedItemColor: (Colors.lightBlue.withOpacity(0.25)),
+        backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.checklist),
+            label: 'Chores', 
           ),
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.devices),
+            label: 'Appliances',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Calendar',
+          ), 
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Account',
+          ),
+        ],
       ),
-    );
+      );
+    // );
   }
 }
 

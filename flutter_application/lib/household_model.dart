@@ -36,3 +36,4 @@ Future<bool> doesHouseholdExist(String householdId) async {
     return false; // Return false if an error occurs
   }
 }
+

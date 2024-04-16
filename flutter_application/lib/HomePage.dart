@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application/SignInPage.dart';
+import 'package:flutter_application/user_model.dart';
 import 'account_page.dart';
 import 'chores_page.dart';
 import 'appliances_page.dart';
@@ -21,11 +22,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late PageController _pageController;
   int _selectedIndex = 0;
+  UserModel? currUserModel;
 
   @override
   void initState() {
     super.initState();
+    _fetchUserModel();
     _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  void _fetchUserModel() async {
+    try {
+      currUserModel = await readData();
+      setState(() {}); // Trigger a rebuild after getting the user model
+    } catch (error) {
+      // Handle error here, such as displaying an error message or retrying
+      print('Error fetching user data: $error');
+    }
   }
 
   void _logout( BuildContext context ) async {
@@ -55,19 +68,46 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
+          AccountPage(),
           const ToDoList(),
           const AppliancesPage(),
           const CalendarPage(),
-          AccountPage(),
+          
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
-            _pageController.animateToPage(index,
-                duration: Duration(milliseconds: 300), curve: Curves.ease);
+            
+            _fetchUserModel();
+            Future.delayed(Duration(seconds: 1), () {
+              if( index != 0 && currUserModel?.currHouse == ""){
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Container(
+                      height: MediaQuery.of(context).size.height * 0.05, // Adjust the height as needed
+                      child: Center(
+                        child: Text(
+                          'Must join or create a household before switching to this page.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 1, milliseconds: 300)
+                  ),
+                );
+                
+              } else {
+                _selectedIndex = index;
+                _pageController.animateToPage(index,
+                    duration: Duration(milliseconds: 300), curve: Curves.ease);
+              }
+            } );
+
+
           });
         },
         // selectedItemColor: Color.fromARGB(255, 12, 212, 22), // Color for selected icon and label
@@ -76,6 +116,10 @@ class _HomePageState extends State<HomePage> {
         unselectedItemColor: (Colors.lightBlue.withOpacity(0.25)),
         backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Account',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.checklist),
             label: 'Chores', 
@@ -88,10 +132,6 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.calendar_today),
             label: 'Calendar',
           ), 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Account',
-          ),
         ],
       ),
       );

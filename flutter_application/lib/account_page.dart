@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'household_join.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
 import 'HomePage.dart';
@@ -115,10 +114,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             content: Text('Object submitted successfully'),
           ));
 
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AccountPage()),
-          );
+          _fetchHouseholdsForCurrentUser();
+          Navigator.of(context).pop();
         });
 
       } else {
@@ -201,6 +198,240 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     });
   }
 
+  void addToObjectArray( String houseName, String password ){
+
+    FirebaseFirestore.instance.collection('households')
+      .where('name', isEqualTo: houseName)
+      .get()
+      .then( (querySnapshot){
+        if(querySnapshot.docs.isNotEmpty){
+          // Assuming there's only one document with the given name
+          var document = querySnapshot.docs.first;
+          // Get the existing array field
+          List<dynamic> existingArray = document.data()['roommates'] ?? [];
+          // Add the string to the array
+
+          HouseholdModel house = HouseholdModel.fromSnapshot(document);
+          // TODO: check if the max roommate count has already been hit
+
+          if (existingArray.contains( currUser?.email)){
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('You are already in this household.'),
+            ));            
+          } else if (house.password != password) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Incorrect Password.'),
+            ));    
+          } else if ( existingArray.length >= house.max_roommate_count ){
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('This house has already hit the maximum amount of roommates.'),
+            ));   
+          } else {
+            existingArray.add(currUser?.email);
+            // Update the document with the modified array
+            document.reference.update({'roommates': existingArray}).then((_) {
+
+              // TODO: actually display success upon adding 
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Household joined successfully'),
+              ));
+
+              _fetchHouseholdsForCurrentUser();
+              Navigator.of(context).pop();
+
+            }).catchError((error) {
+              print('Failed to add string to array: $error');
+            }); 
+          }
+        } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('House does not exist.'),
+            )); 
+          }
+      }).catchError((error) {
+        print('Error retrieving object: $error');
+      });
+  }
+
+  Widget _buildHouseholdCreationForm() {
+    return Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            TextFormField(
+              style: TextStyle(color: theme.inputColor),
+      
+              controller: _nameController,
+              decoration: InputDecoration(
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                ),
+                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                labelText: 'Household Name',
+              ),
+              validator: (value) {
+                if (value!.isEmpty) {
+                  return 'Please enter the name';
+                }
+                return null;
+              },
+              cursorColor: theme.buttonColor,
+            ),
+            TextFormField(
+              style: TextStyle(color: theme.inputColor),
+              cursorColor: theme.buttonColor,
+              controller: _countController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                ),
+                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                labelText: 'Maximum Roommate Count',
+              ),
+              validator: (value) {
+                if (value!.isEmpty) {
+                  return 'Please enter the count';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              style: TextStyle(color: theme.inputColor),
+              cursorColor: theme.buttonColor,
+              controller: _passwordController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                ),
+                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                labelText: 'Password',
+                helperText: 'This is used to control who can join your household',
+              ),
+              validator: (value) {
+                if (value!.isEmpty) {
+                  return 'Please enter a password for your household';
+                }
+                return null;
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        // Process the data
+                        String name = _nameController.text;
+                        int count = int.parse(_countController.text);
+                        _nameController.clear();
+                        _countController.clear();
+                        saveHouseholdToFirebase(name, count, _passwordController.text);
+                        _passwordController.clear();
+                      }
+                    },
+                    child: Text('Submit', style: TextStyle(color: theme.textColor)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        )
+    );
+  }
+
+  Widget _buildHouseholdJoinForm() {
+    return Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              TextFormField(
+                style: TextStyle(color: theme.inputColor),
+                cursorColor: theme.buttonColor,
+                controller: _nameController,
+                decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                  labelText: 'Household Name',
+                  labelStyle: TextStyle(color: Colors.grey),
+                ),
+                validator: (value) {
+                  if(value!.isEmpty) {
+                    return 'Please enter household name';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                style: TextStyle(color: theme.inputColor),
+                cursorColor: theme.buttonColor,
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  ),
+                  floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                  labelText: 'Household Password',
+                  labelStyle: TextStyle(color: Colors.grey),
+                ),
+                validator: (value) {
+                  if(value!.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          // Process the data
+
+                          String? name = _nameController.text;
+                          addToObjectArray(name!, _passwordController.text);
+
+                          _passwordController.clear();
+                          _nameController.clear();
+
+                        }
+                      },
+                      child: Text('Submit', style: TextStyle(color: theme.textColor)),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          ),
+        );
+  }
+
   // Function to show household creation dialog
   Future<void> _showHouseholdCreationDialog(BuildContext context) async {
     return showDialog<void>(
@@ -210,100 +441,26 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             content: 
               SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
-                  child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          TextFormField(
-                            style: TextStyle(color: theme.inputColor),
-                    
-                            controller: _nameController,
-                            decoration: InputDecoration(
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
-                              ),
-                              floatingLabelStyle: TextStyle(color: theme.buttonColor),
-                              labelText: 'Household Name',
-                            ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Please enter the name';
-                              }
-                              return null;
-                            },
-                            cursorColor: theme.buttonColor,
-                          ),
-                          TextFormField(
-                            style: TextStyle(color: theme.inputColor),
-                            cursorColor: theme.buttonColor,
-                            controller: _countController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
-                              ),
-                              floatingLabelStyle: TextStyle(color: theme.buttonColor),
-                              labelText: 'Maximum Roommate Count',
-                            ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Please enter the count';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            style: TextStyle(color: theme.inputColor),
-                            cursorColor: theme.buttonColor,
-                            controller: _passwordController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
-                              ),
-                              floatingLabelStyle: TextStyle(color: theme.buttonColor),
-                              labelText: 'Password',
-                              helperText: 'This is used to control who can join your household',
-                            ),
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return 'Please enter a password for your household';
-                              }
-                              return null;
-                            },
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text('Cancel', style: TextStyle(color: theme.textColor)),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      // Process the data
-                                      String name = _nameController.text;
-                                      int count = int.parse(_countController.text);
-                                      saveHouseholdToFirebase(name, count, _passwordController.text);
-                                    }
-                                  },
-                                  child: Text('Submit', style: TextStyle(color: theme.textColor)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                  ),
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                  child: _buildHouseholdCreationForm()
+                ),
+              )
+              
+          );
+        },
+    );
+  }
+
+  Future<void> _showHouseholdJoinDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+            content: 
+              SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.25),
+                  child: _buildHouseholdJoinForm()
                 ),
               )
               
@@ -432,10 +589,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 visible: _showJoinButton,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HouseholdJoin()),
-                    );
+                    _showHouseholdJoinDialog(context);
                   },
                   child: Text(
                     'Join a Household',

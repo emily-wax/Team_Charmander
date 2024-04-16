@@ -5,8 +5,13 @@ import 'household_join.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
 import 'HomePage.dart';
+import 'SignInPage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
+
+ThemeProvider theme = ThemeProvider();
 
 // TODO: add a password for joining the house
 // TODO: create a back home button
@@ -30,6 +35,21 @@ class _AccountPageState extends State<AccountPage> {
     super.initState();
     _fetchHouseholdsForCurrentUser();
   }
+
+  void _logout(BuildContext context) async {
+  try {
+    await FirebaseAuth.instance.signOut();
+    // Navigate to the login screen or any other screen you want after logout
+    // For example:
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const SignInPage()),
+    );
+  } catch (e) {
+    print('Error logging out: $e');
+    // Show a snackbar or an alert dialog to indicate the error to the user
+  }
+}
 
 Future<void> updateUserHousehold(String? userId, String householdName) async {
 
@@ -138,23 +158,22 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
         title: Text('Account Page'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomePage()),
-                );
-            },
+          Tooltip(
+            message: 'Log out',
+            child: IconButton( 
+              icon: const Icon(Icons.logout),
+              onPressed:() => _logout(context),
+            ), 
           )
         ],
       ),
       body: Container(
-        color: Colors.orange, // Set the background color to orange
         child: Center(
             child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -179,29 +198,31 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text('Adjust each scale:'),
-                                    content: SingleChildScrollView(
+                                  title: Text('Adjust each scale:'),
+                                  content: SingleChildScrollView(
                                       child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // const Text("For best results, keep total score < 4.0"),
-                                        PreferenceSlider(),
-                                        const SizedBox(height: 16),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text('Submit'),
-                                        ),
-                                      ],
-                                    ),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      PreferenceSlider (),
+                                      SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text('Done', style: TextStyle(color: Colors.white)),
+                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
+                                      ),
+                                    ],
+                                  ),
                                     // contentPadding: const EdgeInsets.all(30.0),
                                     )
-                                  );
+                                );
+
                                 },
                               );
                             },
-                            child: const Text('Set Preferences'),
+                            child: Text('Set Preferences', style: TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                           ),
 
                           Text('User Household:'),
@@ -248,8 +269,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Create a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
               SizedBox(height: 20),
@@ -264,8 +286,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   },
                   child: Text(
                     'Join a Household',
-                    style: TextStyle(fontSize: 20),
+                    style: TextStyle(fontSize: 20, color: theme.textColor),
                   ),
+                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
                 ),
               ),
             ])),

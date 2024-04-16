@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
 import 'user_model.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -22,12 +24,12 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(isSignUp ? 'Sign Up' : 'Sign In'),
-        backgroundColor: Colors.white, // White app bar
       ),
-      body: Container(
-        color: Colors.lightGreen[100], // Soft green background
+      body: Container( 
+        color: Colors.white,// Soft green background
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -40,7 +42,6 @@ class _SignInPageState extends State<SignInPage> {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue, // Blue color for "Sign In" or "Sign Up" text
                 ),
               ),
               const SizedBox(height: 20),
@@ -49,7 +50,8 @@ class _SignInPageState extends State<SignInPage> {
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Color.fromARGB(221, 235, 231, 231),
+                  
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -64,7 +66,7 @@ class _SignInPageState extends State<SignInPage> {
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Color.fromARGB(221, 235, 231, 231),
                 ),
                 obscureText: true,
                 validator: (value) {
@@ -85,9 +87,9 @@ class _SignInPageState extends State<SignInPage> {
               ElevatedButton(
                 onPressed: isLoading ? null : () => _authenticate(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white, // White button
+                  backgroundColor: Color.fromARGB(255, 8, 174, 245), // White button
                 ),
-                child: Text(isSignUp ? 'Sign Up' : 'Sign In'),
+                child: Text(isSignUp ? 'Sign Up' : 'Sign In', style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 10),
               TextButton(
@@ -97,7 +99,7 @@ class _SignInPageState extends State<SignInPage> {
                   });
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue, // Blue color for "already have an account?"
+                  foregroundColor: Color.fromARGB(255, 8, 174, 245), // Blue color for "already have an account?"
                 ),
                 child: Text(
                   isSignUp
@@ -128,7 +130,7 @@ class _SignInPageState extends State<SignInPage> {
           await authService.signUpWithEmailAndPassword(email, password);
           
           // adds user to database when signing up
-          _createData(UserModel('0', email, "", {'cleaner': 0.5, 'evening': 0.5, 'maintain': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
+          _createData(UserModel('0', email, "", false, {'cleaner': 0.5, 'evening': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
 
         } else {
           // Sign In
@@ -168,6 +170,7 @@ class _SignInPageState extends State<SignInPage> {
         id,
         userModel.email, 
         userModel.currHouse,
+        userModel.darkMode,
         userModel.preferences
       ).toJson();
 

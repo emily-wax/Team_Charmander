@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application/account_page.dart';
 import 'auth_service.dart'; // Import the AuthService
 import 'HomePage.dart';
 import 'user_model.dart';
@@ -132,7 +133,7 @@ class _SignInPageState extends State<SignInPage> {
         // Navigate to HomePage after signing in/up
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => HomePage()),
         );
       } catch (e) {
         // Handle sign-in/up errors, e.g., show an error message

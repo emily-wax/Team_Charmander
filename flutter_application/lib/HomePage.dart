@@ -55,10 +55,11 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
+          AccountPage(),
           const ToDoList(),
           const AppliancesPage(),
           const CalendarPage(),
-          AccountPage(),
+          
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -77,6 +78,10 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
           BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Account',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.checklist),
             label: 'Chores', 
           ),
@@ -88,10 +93,6 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.calendar_today),
             label: 'Calendar',
           ), 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Account',
-          ),
         ],
       ),
       );

@@ -303,7 +303,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               style: TextStyle(color: theme.inputColor),
               cursorColor: theme.buttonColor,
               controller: _passwordController,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.visiblePassword,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled

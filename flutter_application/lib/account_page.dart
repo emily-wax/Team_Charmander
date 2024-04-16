@@ -170,6 +170,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household. It has been deleted.'),
+                duration: Duration(seconds: 1, milliseconds: 300),
               ));
             }).catchError((error) {
               print('Failed to update roommates list: $error');
@@ -184,6 +185,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household.'),
+                duration: Duration(seconds: 1, milliseconds: 300),
               ));
             }).catchError((error) {
               print('Failed to update roommates list: $error');

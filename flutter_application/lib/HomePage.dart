@@ -79,29 +79,34 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
-            if( _selectedIndex != 0 && currUserModel?.currHouse == ""){
+            
+            _fetchUserModel();
+            Future.delayed(Duration(seconds: 1), () {
+              if( index != 0 && currUserModel?.currHouse == ""){
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Container(
-                    height: MediaQuery.of(context).size.height * 0.05, // Adjust the height as needed
-                    child: Center(
-                      child: Text(
-                        'Must join or create a household before switching to this page.',
-                        textAlign: TextAlign.center,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Container(
+                      height: MediaQuery.of(context).size.height * 0.05, // Adjust the height as needed
+                      child: Center(
+                        child: Text(
+                          'Must join or create a household before switching to this page.',
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 1, milliseconds: 300)
                   ),
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 1, milliseconds: 300)
-                ),
-              );
-              
-            } else {
-              _pageController.animateToPage(index,
-                  duration: Duration(milliseconds: 300), curve: Curves.ease);
-            }
+                );
+                
+              } else {
+                _selectedIndex = index;
+                _pageController.animateToPage(index,
+                    duration: Duration(milliseconds: 300), curve: Curves.ease);
+              }
+            } );
+
 
           });
         },

@@ -71,7 +71,7 @@ class _SignInPageState extends State<SignInPage> {
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Please enter your password (6+ characters)';
+                    return 'Please enter your password';
                   }
                   return null;
                 },

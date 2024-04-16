@@ -296,7 +296,7 @@ class _ToDoListState extends State<ToDoList> {
                             children: [
                               if (!assigneeMatchesCurrUser)
                                 IconButton(
-                                  icon: const Icon(Icons.shopping_cart_rounded),
+                                  icon: const Icon(Icons.transfer_within_a_station),
                                   onPressed: () {
                                     _reassignChoreOnClaim(
                                         choreName,
@@ -310,7 +310,7 @@ class _ToDoListState extends State<ToDoList> {
                               IconButton(
                                 icon: Icon(Icons.edit),
                                 onPressed: () {
-                                  _editChore(choreName, choreId, assignee,
+                                  _showEditChoreDialog(choreName, choreId, assignee,
                                       deadline, timelength);
                                 },
                               ),
@@ -344,7 +344,7 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 
-  void _editChore(String choreName, String choreId, String assignee,
+  void _showEditChoreDialog(String choreName, String choreId, String assignee,
       DateTime? deadline, String timelength) {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
@@ -474,8 +474,8 @@ class _ToDoListState extends State<ToDoList> {
                   style: ElevatedButton.styleFrom(
                       backgroundColor: theme.buttonColor),
                   onPressed: () {
-                    Timestamp? deadline = selectedDate != null
-                        ? Timestamp.fromDate(selectedDate!)
+                    Timestamp? deadlineReal = deadline != null
+                        ? Timestamp.fromDate(deadline!)
                         : null;
 
                     if (editedTimelength == null) {
@@ -485,7 +485,7 @@ class _ToDoListState extends State<ToDoList> {
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
                         _updateChoreInFirestore(choreId, editedChoreName,
-                            editedAssignee, deadline, timelength);
+                            editedAssignee, deadlineReal, timelength);
                         Navigator.of(context).pop();
                       }
                     }

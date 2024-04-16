@@ -50,6 +50,20 @@ class _CalendarPageState extends State<CalendarPage> {
     }
   }
 
+  void updateAppointments (QuerySnapshot? snapshot) {
+
+      List<Appointment> appointments = snapshot!.docs.map((doc) {
+      Map<String, dynamic> data = (doc.data() as Map<String, dynamic>);
+      return Appointment(
+        startTime: data['start'].toDate(),
+        endTime: data['end'].toDate(),
+        subject: data['name'],
+      );
+    }).toList();
+
+    _eventDataSource.appointments!.addAll(appointments);
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
@@ -109,7 +123,7 @@ class _CalendarPageState extends State<CalendarPage> {
       );
     }
 
-    List<Appointment> appointments = snapshot.docs.map((doc) {
+      List<Appointment> appointments = snapshot!.docs.map((doc) {
       Map<String, dynamic> data = (doc.data() as Map<String, dynamic>);
       return Appointment(
         startTime: data['start'].toDate(),
@@ -542,10 +556,10 @@ void _handleAppointmentTap(Appointment appointment) {
                       subject: eventName!,
                     );
 
+                    updateAppointments(snapshot);
                     setState(() {
                       
                       _eventDataSource.appointments?.add(appointment);
-                      buildCalendarPage(snapshot);
                     });
 
                     await _firestore

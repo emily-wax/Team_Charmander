@@ -55,9 +55,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
-          ToDoList(),
-          
-          AppliancesPage(),
+          const ToDoList(),
+          const AppliancesPage(),
           const CalendarPage(),
           AccountPage(),
         ],
@@ -71,8 +70,10 @@ class _HomePageState extends State<HomePage> {
                 duration: Duration(milliseconds: 300), curve: Curves.ease);
           });
         },
-        selectedItemColor: Colors.black, // Color for selected icon and label
-        unselectedItemColor: Colors.black.withOpacity(0.5),
+        // selectedItemColor: Color.fromARGB(255, 12, 212, 22), // Color for selected icon and label
+        // unselectedItemColor: Color.fromARGB(255, 12, 212, 22).withOpacity(0.5),
+        selectedItemColor: (Colors.lightBlue.withOpacity(0.75)),
+        unselectedItemColor: (Colors.lightBlue.withOpacity(0.25)),
         backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
           BottomNavigationBarItem(

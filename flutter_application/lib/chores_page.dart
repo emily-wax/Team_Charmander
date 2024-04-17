@@ -205,7 +205,7 @@ class _ToDoListState extends State<ToDoList> {
           );
         }
         var chores = snapshot.data!.docs;
-        List<Widget> choreWidgets = [];
+        // List<Widget> choreWidgets = [];
         Color textColor = Colors.grey;
 
         return Column(
@@ -270,8 +270,8 @@ class _ToDoListState extends State<ToDoList> {
                                   '$choreName',
                                   style: TextStyle(
                                     decoration: isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
                                     color: textColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18
@@ -279,21 +279,30 @@ class _ToDoListState extends State<ToDoList> {
                                 ),
                                 Text('Do: $assignee',
                                   style: TextStyle(
+                                    decoration: isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
                                     color: textColor,
                                   )),
                                 if (deadline != null)
                                   Text('Due: $formattedDate',
                                       style: TextStyle(
+                                        decoration: isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
                                         color: textColor,
                                       )),
                                 Text('Est. Time: $timelength',
                                     style: TextStyle(
+                                      decoration: isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
                                       color: textColor,
                                     ))
                               ],
                             ),
                           ),
-                          Row(
+                          Column(
                             children: [
                               if (!assigneeMatchesCurrUser)
                                 IconButton(

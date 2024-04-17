@@ -475,143 +475,159 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    String householdTitle = "";
-    if (_household != null){
-      householdTitle = '${_household!.name} (${_household!.roommates.length}/${_household!.max_roommate_count})';
-    }
+@override
+Widget build(BuildContext context) {
+  String householdTitle = _household != null
+      ? '${_household!.name}'
+      : 'Create or Join a House';
 
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    theme = themeProvider;
+  final themeProvider = Provider.of<ThemeProvider>(context);
+  theme = themeProvider;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Account Page'),
-        actions: [
-          Tooltip(
-            message: 'Log out',
-            child: IconButton( 
-              icon: const Icon(Icons.logout),
-              onPressed:() => _logout(context),
-            ), 
-          )
-        ],
-      ),
-      body: Container(
-        child: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-              FutureBuilder(
-                future: readData(),
-                builder:( (context, snapshot) {
-                  if( snapshot.connectionState == ConnectionState.done){
-                    if(snapshot.hasData){
-                      UserModel? user = snapshot.data as UserModel;
-
-                      // TODO: find a better way to display user data ...
-
-                      // Display current user email and households
-                      return Column(
-                        children: [
-                          Text(user.email!),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                  title: Text('Adjust each scale:'),
-                                  content: SingleChildScrollView(
-                                      child: Column(
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Account Page'),
+      actions: [
+        Tooltip(
+          message: 'Log out',
+          child: IconButton( 
+            icon: const Icon(Icons.logout),
+            onPressed:() => _logout(context),
+          ), 
+        )
+      ],
+    ),
+    body: SingleChildScrollView(
+      padding: EdgeInsets.all(16.0),
+      child: Center( // Center the content horizontally
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_household != null)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                child: Text(
+                  householdTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 24.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            FutureBuilder(
+              future: readData(),
+              builder:(context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+                  UserModel? user = snapshot.data as UserModel?;
+                  return Column(
+                    children: [
+                      Text(
+                        user!.email!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20.0,
+                        ),
+                      ),
+                      SizedBox(height: 20.0),
+                      ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Adjust each scale:'),
+                                content: SingleChildScrollView(
+                                  child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      PreferenceSlider (),
+                                      PreferenceSlider(),
                                       SizedBox(height: 16),
                                       ElevatedButton(
                                         onPressed: () {
                                           Navigator.of(context).pop();
                                         },
                                         child: Text('Done', style: TextStyle(color: Colors.white)),
-                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
+                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
                                       ),
                                     ],
                                   ),
-                                    // contentPadding: const EdgeInsets.all(30.0),
-                                    )
-                                );
-
-                                },
+                                ),
                               );
                             },
-                            child: Text('Set Preferences', style: TextStyle(color: Colors.white)),
-                            style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
+                          );
+                        },
+                        child: Text('Set Preferences', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                      ),
+                      if (_household != null) ...[
+                        SizedBox(height: 20.0),
+                        Text(
+                          'Household Members:',
+                          style: TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold,
                           ),
-
-                          // Text('User Household:'),
-                          // SizedBox(height: 10,),
-                          if (_household != null)
-                                ListTile(
-                                  title: Text(householdTitle),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: _household!.roommates.map((email) => Text(email)).toList(),
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Text("Number of Household Members: ${_household!.roommates.length}"),
-                                      // SizedBox(width: 10),
-                                      IconButton(
-                                        onPressed: () {
-                                          removeFromHousehold(_household!.name);
-                                        } , 
-                                        icon: Icon(Icons.outbound_outlined),
-                                      )
-                                      ],
-                                    )
-                                )                        
-                        ],
-                      );
-                    }
-                  }
-
-                  return Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),));
-                }),
-              ),
-              SizedBox(height: 20),
-              Visibility(
-                visible: _showJoinButton,
-                child: 
-                  ElevatedButton(
-                    onPressed: () {
-                      _showHouseholdCreationDialog(context); // Call the function to show the dialog
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-                    child: Text(
-                      'Create a Household',
-                      style: TextStyle(fontSize: 20, color: theme.textColor),
-                    ),
-                  ),
-                ),
-              SizedBox(height: 20),
-              Visibility(
-                visible: _showJoinButton,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _showHouseholdJoinDialog(context);
-                  },
-                  child: Text(
-                    'Join a Household',
-                    style: TextStyle(fontSize: 20, color: theme.textColor),
-                  ),
-                  style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor)
+                        ),
+                        SizedBox(height: 10.0),
+                        Column(
+                          children: _household!.roommates
+                              .map((email) => Text(email, textAlign: TextAlign.center))
+                              .toList(),
+                        ),
+                        SizedBox(height: 20.0),
+                        ElevatedButton(
+                          onPressed: () {
+                            removeFromHousehold(_household!.name);
+                          },
+                          child: Text(
+                            'Leave House',
+                            style: TextStyle(fontSize: 16, color: theme.textColor),
+                          ),
+                          style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                        ),
+                      ],
+                    ],
+                  );
+                }
+                return Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245)));
+              },
+            ),
+            SizedBox(height: 20),
+            Visibility(
+              visible: _showJoinButton,
+              child: ElevatedButton(
+                onPressed: () {
+                  _showHouseholdCreationDialog(context); // Call the function to show the dialog
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                child: Text(
+                  'Create a Household',
+                  style: TextStyle(fontSize: 20, color: theme.textColor),
                 ),
               ),
-            ])),
+            ),
+            SizedBox(height: 20),
+            Visibility(
+              visible: _showJoinButton,
+              child: ElevatedButton(
+                onPressed: () {
+                  _showHouseholdJoinDialog(context);
+                },
+                child: Text(
+                  'Join a Household',
+                  style: TextStyle(fontSize: 20, color: theme.textColor),
+                ),
+                style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+
+
 }

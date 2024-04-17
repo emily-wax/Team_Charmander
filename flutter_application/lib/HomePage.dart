@@ -112,8 +112,8 @@ class _HomePageState extends State<HomePage> {
         },
         // selectedItemColor: Color.fromARGB(255, 12, 212, 22), // Color for selected icon and label
         // unselectedItemColor: Color.fromARGB(255, 12, 212, 22).withOpacity(0.5),
-        selectedItemColor: (Colors.lightBlue.withOpacity(0.75)),
-        unselectedItemColor: (Colors.lightBlue.withOpacity(0.25)),
+        selectedItemColor: (Color.fromARGB(255, 3, 127, 180)),
+        unselectedItemColor: (Color.fromARGB(255, 3, 127, 180)),
         backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
           BottomNavigationBarItem(
@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             tooltip: "Calendar",
             icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
+            label: 'Calendar',  
           ), 
         ],
       ),

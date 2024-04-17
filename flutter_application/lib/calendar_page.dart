@@ -120,7 +120,7 @@ class _CalendarPageState extends State<CalendarPage> {
     }
     if (snapshot.docs.isEmpty) {
       return const Center(
-        child: Text('No events available'),
+        child: Text('Press the + to add an event!', style: TextStyle(fontSize: 18, color: Colors.grey),),
       );
     }
 

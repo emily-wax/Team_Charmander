@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
         },
         children: [
           AccountPage(),
-          const ToDoList(),
+          const ChoresPage(),
           const AppliancesPage(),
           const CalendarPage(),
           
@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
             label: 'Account',
           ),
           BottomNavigationBarItem(
-            tooltip: "To-Do List",
+            tooltip: "Chores",
             icon: Icon(Icons.checklist),
             label: 'Chores', 
           ),

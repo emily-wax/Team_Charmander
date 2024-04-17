@@ -157,6 +157,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
         return AlertDialog(
           title: Text('Add Appliance'),
           content: TextField(
+            maxLength: 15,
             cursorColor: theme.buttonColor,
             controller: _applianceNameController,
             decoration: InputDecoration(

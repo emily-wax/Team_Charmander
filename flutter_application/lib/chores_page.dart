@@ -286,10 +286,11 @@ class _ToDoListState extends State<ToDoList> {
                                       style: TextStyle(
                                         color: textColor,
                                       )),
-                                Text('Est. Time: $timelength',
-                                    style: TextStyle(
-                                      color: textColor,
-                                    ))
+                                if (timelength != null)
+                                  Text('Est. Time: $timelength',
+                                      style: TextStyle(
+                                        color: textColor,
+                                      ))
                               ],
                             ),
                           ),

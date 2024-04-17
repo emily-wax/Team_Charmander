@@ -117,18 +117,22 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.blue, // Periwinkle blue color // Color for unselected icon and label
         items: [
           BottomNavigationBarItem(
+            tooltip: "Account",
             icon: Icon(Icons.account_circle),
             label: 'Account',
           ),
           BottomNavigationBarItem(
+            tooltip: "To-Do List",
             icon: Icon(Icons.checklist),
             label: 'Chores', 
           ),
           BottomNavigationBarItem(
+            tooltip: "Appliances",
             icon: Icon(Icons.devices),
             label: 'Appliances',
           ),
           BottomNavigationBarItem(
+            tooltip: "Calendar",
             icon: Icon(Icons.calendar_today),
             label: 'Calendar',
           ), 

@@ -9,14 +9,14 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
-class ToDoList extends StatefulWidget {
-  const ToDoList({Key? key}) : super(key: key);
+class ChoresPage extends StatefulWidget {
+  const ChoresPage({Key? key}) : super(key: key);
 
   @override
-  _ToDoListState createState() => _ToDoListState();
+  _ChoresPageState createState() => _ChoresPageState();
 }
 
-class _ToDoListState extends State<ToDoList> {
+class _ChoresPageState extends State<ChoresPage> {
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
@@ -165,7 +165,7 @@ class _ToDoListState extends State<ToDoList> {
     theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('To-Do List'),
+        title: const Text('Chores'),
       ),
       body: FutureBuilder<UserModel>(
         future: readData(),

@@ -384,206 +384,221 @@ void _handleAppointmentTap(Appointment appointment) {
     );
   }
 
-  void _handleAddEvent() {
-
+  void _handleAddEvent() async {
   DateTime? selectedStartDate = DateTime.now();
   TimeOfDay? selectedStartTime;
   DateTime? selectedEndDate = DateTime.now();
   TimeOfDay? selectedEndTime;
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        String? eventName;
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      String? eventName;
 
-        return AlertDialog(
-          title: const Text('Add Event'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                cursorColor: theme.buttonColor,
-                controller: _eventNameController,
-                decoration: InputDecoration(labelText: 'Event Name',
+      return AlertDialog(
+        title: const Text('Add Event'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              cursorColor: theme.buttonColor,
+              controller: _eventNameController,
+              decoration: InputDecoration(
+                labelText: 'Event Name',
                 labelStyle: TextStyle(color: theme.buttonColor),
                 focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
-                    ),
+                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
                 ),
-                onChanged: (value) => eventName = value,
               ),
-              const SizedBox(height: 16.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-                        onPressed: () async {
-                          final selectedDate = await showDatePicker(
-                            context: context,
-                            initialDate: selectedStartDate ?? DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2100),
-                          );
-                          if (selectedDate != null) {
-                            final selectedTime = await showTimePicker(
-                              context: context,
-                              initialTime: selectedStartTime ?? TimeOfDay.now(),
-                            );
-                            if (selectedTime != null) {
-                              setState(() {
-                                selectedStartDate = selectedDate;
-                                selectedStartTime = selectedTime;
-                              });
-                            }
-                          }
-                        },
-                        child: Text('Start', style: TextStyle(color: theme.textColor),),
+              onChanged: (value) => eventName = value,
+            ),
+            const SizedBox(height: 16.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.buttonColor,
                       ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-                        onPressed: () async {
-                          final selectedDate = await showDatePicker(
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedStartDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (selectedDate != null) {
+                          final selectedTime = await showTimePicker(
                             context: context,
-                            initialDate: selectedStartDate ?? DateTime.now(),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2100),
+                            initialTime: selectedStartTime ?? TimeOfDay.now(),
                           );
-                          if (selectedDate != null) {
-                            final selectedTime = await showTimePicker(
-                              context: context,
-                              initialTime: selectedStartTime?.replacing(hour: selectedStartTime!.hour + 1) ??
-                                TimeOfDay.now(),
-                            );
-                            if (selectedTime != null) {
-                              setState(() {
-                                selectedEndDate = selectedDate;
-                                selectedEndTime = selectedTime;
-                              });
-                            }
+                          if (selectedTime != null) {
+                            setState(() {
+                              selectedStartDate = selectedDate;
+                              selectedStartTime = selectedTime;
+                            });
                           }
-                        },
-                        child: Text('End', style: TextStyle(color: theme.textColor),),
+                        }
+                      },
+                      child: Text(
+                        'Start',
+                        style: TextStyle(color: theme.textColor),
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              Text(
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.buttonColor,
+                      ),
+                      onPressed: () async {
+                        final selectedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedStartDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (selectedDate != null) {
+                          final selectedTime = await showTimePicker(
+                            context: context,
+                            initialTime: selectedStartTime?.replacing(hour: selectedStartTime!.hour + 1) ?? TimeOfDay.now(),
+                          );
+                          if (selectedTime != null) {
+                            setState(() {
+                              selectedEndDate = selectedDate;
+                              selectedEndTime = selectedTime;
+                            });
+                          }
+                        }
+                      },
+                      child: Text(
+                        'End',
+                        style: TextStyle(color: theme.textColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Text(
               'You must enter both a start and end date/time.',
               style: TextStyle(color: Colors.grey),
             ),
-            ],
-
-          ),
-          
-          actions: [
-            // Cancel button...
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-              onPressed: () {
-                _eventNameController.clear();
-                _calendarController.dispose();
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel', style: TextStyle(color: theme.textColor),),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
-              onPressed: () async {
-                
-                // check if name is unique
-                QuerySnapshot snapshot = await _firestore
-                    .collection('households')
-                    .doc(currUserModel!.currHouse)
-                    .collection('events')
-                    .where('name', isEqualTo: eventName)
-                    .get();
-
-                if(snapshot.docs.isNotEmpty){
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Try again with a unique event name.'),
-                  ));  
-
-                } else if (eventName != null && selectedEndTime != null && selectedStartTime != null && selectedEndDate != null && selectedStartDate != null) {
-                    UserModel currUserModel = await readData();
-                    final event = {
-                      'name': eventName,
-                      'start': DateTime(
-                        selectedStartDate!.year,
-                        selectedStartDate!.month,
-                        selectedStartDate!.day,
-                        selectedStartTime!.hour,
-                        selectedStartTime!.minute,
-                      ),
-                      'end': DateTime(
-                        selectedEndDate!.year,
-                        selectedEndDate!.month,
-                        selectedEndDate!.day,
-                        selectedEndTime!.hour,
-                        selectedEndTime!.minute,
-                      ),
-                      'user': currUserModel.email, // Placeholder for user name, replace with actual user name
-                    };
-
-                    final startTime = DateTime(
-                        selectedStartDate!.year,
-                        selectedStartDate!.month,
-                        selectedStartDate!.day,
-                        selectedStartTime!.hour,
-                        selectedStartTime!.minute,
-                    );
-
-                    final endTime = DateTime(
-                        selectedEndDate!.year,
-                        selectedEndDate!.month,
-                        selectedEndDate!.day,
-                        selectedEndTime!.hour,
-                        selectedEndTime!.minute,
-                    );
-
-                    final appointment = Appointment(
-                      endTime: endTime,
-                      startTime: startTime,
-                      subject: eventName!,
-                    );
-
-                    updateAppointments(snapshot);
-                    setState(() {
-                      
-                      _eventDataSource.appointments?.add(appointment);
-                    });
-
-                    await _firestore
-                        .collection('households')
-                        .doc(currUserModel.currHouse) // Use the household ID obtained from Firestore
-                        .collection('events')
-                        .add(event);
-                }
-                _eventNameController.clear();
-                _calendarController.dispose();
-
-                Navigator.of(context).pop();
-
-                
-
-                
-              },
-              child: Text('Add', style: TextStyle(color: theme.textColor),),
-            ),
           ],
-        );
-      },
-    );
-  }
+        ),
+        actions: [
+          // Cancel button...
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.buttonColor,
+            ),
+            onPressed: () {
+              _eventNameController.clear();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: theme.textColor),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.buttonColor,
+            ),
+            onPressed: () async {
+              // check if name is unique
+              QuerySnapshot snapshot = await _firestore
+                  .collection('households')
+                  .doc(currUserModel!.currHouse)
+                  .collection('events')
+                  .where('name', isEqualTo: eventName)
+                  .get();
+
+              if (snapshot.docs.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Try again with a unique event name.'),
+                ));
+              } else if (eventName != null &&
+                  selectedEndTime != null &&
+                  selectedStartTime != null &&
+                  selectedEndDate != null &&
+                  selectedStartDate != null) {
+                UserModel currUserModel = await readData();
+                final event = {
+                  'name': eventName,
+                  'start': DateTime(
+                    selectedStartDate!.year,
+                    selectedStartDate!.month,
+                    selectedStartDate!.day,
+                    selectedStartTime!.hour,
+                    selectedStartTime!.minute,
+                  ),
+                  'end': DateTime(
+                    selectedEndDate!.year,
+                    selectedEndDate!.month,
+                    selectedEndDate!.day,
+                    selectedEndTime!.hour,
+                    selectedEndTime!.minute,
+                  ),
+                  'user': currUserModel.email, // Placeholder for user name, replace with actual user name
+                };
+
+                final startTime = DateTime(
+                  selectedStartDate!.year,
+                  selectedStartDate!.month,
+                  selectedStartDate!.day,
+                  selectedStartTime!.hour,
+                  selectedStartTime!.minute,
+                );
+
+                final endTime = DateTime(
+                  selectedEndDate!.year,
+                  selectedEndDate!.month,
+                  selectedEndDate!.day,
+                  selectedEndTime!.hour,
+                  selectedEndTime!.minute,
+                );
+
+                final appointment = Appointment(
+                  endTime: endTime,
+                  startTime: startTime,
+                  subject: eventName!,
+                );
+
+                setState(() {
+                  // Add the new appointment to the local list of appointments
+                  _eventDataSource.appointments?.add(appointment);
+                });
+
+                await _firestore
+                    .collection('households')
+                    .doc(currUserModel.currHouse) // Use the household ID obtained from Firestore
+                    .collection('events')
+                    .add(event);
+
+                // Explicitly trigger a rebuild of the widget tree to update the calendar view
+                setState(() {});
+              }
+              _eventNameController.clear();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Add',
+              style: TextStyle(color: theme.textColor),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
   void _updateDisplayDate() {
     final now = DateTime.now();

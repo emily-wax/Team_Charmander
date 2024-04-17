@@ -50,6 +50,7 @@ class _CalendarPageState extends State<CalendarPage> {
     }
   }
 
+  //not for updating the event
   void updateAppointments (QuerySnapshot? snapshot) {
 
       List<Appointment> appointments = snapshot!.docs.map((doc) {
@@ -260,53 +261,58 @@ void _handleAppointmentTap(Appointment appointment) {
             },
             child: Text('Cancel', style: TextStyle(color: theme.textColor),),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.buttonColor
-                          ),
-            onPressed: () async {
-              // Perform update logic here
-              UserModel? currentUserModel = await readData();
-              if (eventName.isNotEmpty) {
-                final updatedEvent = {
-                  'name': eventName,
-                  'start': DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute),
-                  'end': DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute),
-                  'user': currentUserModel?.email,
-                };
+         ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: theme.buttonColor,
+  ),
+  onPressed: () async {
+    // Perform update logic here
+    UserModel? currentUserModel = await readData();
+    if (eventName.isNotEmpty) {
+      final updatedEvent = {
+        'name': eventName,
+        'start': DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute),
+        'end': DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute),
+        'user': currentUserModel?.email,
+      };
 
-                QuerySnapshot snapshot = await FirebaseFirestore.instance
-                    .collection('households')
-                    .doc(currentUserModel!.currHouse)
-                    .collection('events')
-                    .where('name', isEqualTo: appointment.subject)
-                    .where('user', isEqualTo: currUserModel?.email)
-                    .get();
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('households')
+          .doc(currentUserModel!.currHouse)
+          .collection('events')
+          .where('name', isEqualTo: appointment.subject)
+          .where('user', isEqualTo: currUserModel?.email)
+          .get();
 
-                // Iterate over the documents and update each one
-                snapshot.docs.forEach((doc) {
-                  // Get the reference to the document and call .update on it
-                  doc.reference.update(updatedEvent);
-                });
+      // Iterate over the documents and update each one
+      snapshot.docs.forEach((doc) {
+        // Get the reference to the document and call .update on it
+        doc.reference.update(updatedEvent);
+      });
 
-                // Update event in the calendar
-                setState(() {
-                  appointment.subject = eventName;
-                  appointment.startTime = DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute);
-                  appointment.endTime = DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute);
-                });
+      // Update event in the calendar
+      setState(() {
+        // Find the index of the updated appointment
+        int index = _eventDataSource.appointments!.indexWhere((element) => element == appointment);
+        if (index != -1) {
+          _eventDataSource.appointments![index].subject = eventName;
+          _eventDataSource.appointments![index].startTime = DateTime(startDate.year, startDate.month, startDate.day, startTime.hour, startTime.minute);
+          _eventDataSource.appointments![index].endTime = DateTime(endDate.year, endDate.month, endDate.day, endTime.hour, endTime.minute);
+        }
+      });
 
-                Navigator.of(context).pop(); // Close the dialog
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Event name cannot be empty'),
-                  ),
-                );
-              }
-            },
-            child: Text('Update', style: TextStyle(color: theme.textColor)),
-          ),
+      Navigator.of(context).pop(); // Close the dialog
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Event name cannot be empty'),
+        ),
+      );
+    }
+  },
+  child: Text('Update', style: TextStyle(color: theme.textColor)),
+),
+
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                             backgroundColor: theme.buttonColor

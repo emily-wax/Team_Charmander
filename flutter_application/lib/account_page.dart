@@ -501,7 +501,6 @@ Widget build(BuildContext context) {
       padding: EdgeInsets.all(16.0),
       child: Center( // Center the content horizontally
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             if (_household != null)
               Padding(

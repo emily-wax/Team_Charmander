@@ -92,7 +92,7 @@ class _CalendarPageState extends State<CalendarPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting || currUserModel == null) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),),
             );
           }
           if (snapshot.hasError) {
@@ -114,7 +114,7 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget buildCalendarPage(QuerySnapshot? snapshot) {
     if (snapshot == null || currUserModel == null) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),),
       );
     }
     if (snapshot.docs.isEmpty) {

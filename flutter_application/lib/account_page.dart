@@ -578,7 +578,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                     }
                   }
 
-                  return Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),));
                 }),
               ),
               SizedBox(height: 20),

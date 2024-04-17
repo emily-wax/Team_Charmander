@@ -210,15 +210,18 @@ Widget buildChoresPage() {
                 ),
               ),
             ),
-            FloatingActionButton(
+            Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
               onPressed: () {
                 assigneeController.clear();
                 titleController.clear();
                 _showAddTaskDialog(context);
               },
               child: Icon(Icons.add, color: Colors.white),
-              backgroundColor: Colors.blue, // Customize as needed
+              backgroundColor: theme.buttonColor, // Customize as needed
             ),
+          ),
           ],
         );
       }
@@ -349,14 +352,17 @@ Widget buildChoresPage() {
               },
             ),
           ),
-          FloatingActionButton(
-            onPressed: () {
-              assigneeController.clear();
-              titleController.clear();
-              _showAddTaskDialog(context);
-            },
-            child: Icon(Icons.add, color: Colors.white),
-            backgroundColor: Colors.blue, // Customize as needed
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
+              onPressed: () {
+                assigneeController.clear();
+                titleController.clear();
+                _showAddTaskDialog(context);
+              },
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: theme.buttonColor, // Customize as needed
+            ),
           ),
         ],
       );

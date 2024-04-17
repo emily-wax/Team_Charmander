@@ -100,6 +100,7 @@ class _ToDoListState extends State<ToDoList> {
         'inCalendar': false,
       });
     }
+    autoAssignChecked = false;
   }
 
   void _deleteChore(String choreId) {
@@ -570,7 +571,7 @@ class _ToDoListState extends State<ToDoList> {
                     if (editedChoreName.isNotEmpty) {
                       if (editedAssignee != null || autoAssignChecked) {
                         _updateChoreInFirestore(choreId, editedChoreName,
-                            editedAssignee, deadlineReal, timelength);
+                            editedAssignee, deadlineReal, editedTimelength);
                         Navigator.of(context).pop();
                       }
                     }

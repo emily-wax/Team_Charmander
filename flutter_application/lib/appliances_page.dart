@@ -28,7 +28,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),),
             );
           } else if (snapshot.hasError) {
             return Center(
@@ -56,7 +56,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(color: Color.fromARGB(255, 8, 174, 245),),
                   );
                 }
                 var appliances = snapshot.data!.docs;
@@ -157,6 +157,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
         return AlertDialog(
           title: Text('Add Appliance'),
           content: TextField(
+            maxLength: 15,
             cursorColor: theme.buttonColor,
             controller: _applianceNameController,
             decoration: InputDecoration(

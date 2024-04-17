@@ -4,7 +4,7 @@ import 'user_model.dart';
 
 class ThemeProvider extends ChangeNotifier {
   late ThemeData _selectedTheme; // Selected theme
-  Color buttonColor = Color.fromARGB(255, 8, 174, 245);
+  Color buttonColor = Color.fromARGB(255, 3, 127, 180);
   Color textColor = Colors.white;
   Color inputColor = Colors.black;
 

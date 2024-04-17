@@ -352,9 +352,23 @@ void _handleAppointmentTap(Appointment appointment) {
                     .then((snapshot) {
                   snapshot.docs.forEach((doc) {
                     doc.reference.delete();
+                    
                   });
                 });
-
+                await _firestore  
+                    .collection('households')
+                    .doc(currUserModel!.currHouse)
+                    .collection('chores')
+                    .where('choreName', isEqualTo: appointment.subject)
+                    .get()
+                    .then((snapshot) {
+                      if(snapshot.docs.isNotEmpty){
+                        snapshot.docs.forEach((doc) {
+                        doc.reference.update({'inCalendar':false});
+                      });
+                    }
+                });
+                    
                 // Remove the event from the calendar
                 setState(() {
                   _eventDataSource.appointments!.remove(appointment);

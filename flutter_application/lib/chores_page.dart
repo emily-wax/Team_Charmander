@@ -39,6 +39,7 @@ class _ToDoListState extends State<ToDoList> {
             'isCompleted': false,
             'deadline': deadline,
             'timelength': timelength,
+            'inCalendar': false,
           });
         });
       });
@@ -53,6 +54,7 @@ class _ToDoListState extends State<ToDoList> {
         'isCompleted': false,
         'deadline': deadline,
         'timelength': timelength,
+        'inCalendar': false,
       });
     }
     selectedUser = null;
@@ -62,7 +64,7 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName,
-      String? assignee, Timestamp? deadline, String? timelength) async {
+      String? assignee, Timestamp? deadline, String? timelength) async {   //delete calendar event upon updating
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -80,6 +82,7 @@ class _ToDoListState extends State<ToDoList> {
             'assignee': assignee,
             'deadline': deadline,
             'timelength': timelength,
+            'inCalendar': false,
           });
         });
       });
@@ -94,6 +97,7 @@ class _ToDoListState extends State<ToDoList> {
         'assignee': assignee,
         'deadline': deadline,
         'timelength': timelength,
+        'inCalendar': false,
       });
     }
   }
@@ -105,6 +109,68 @@ class _ToDoListState extends State<ToDoList> {
         .collection('chores')
         .doc(choreId)
         .delete();
+  }
+
+  void _addTocalendar(String choreId) async{                ///////////////here
+    DateTime start;
+    DateTime end;
+    DocumentSnapshot choreSnapshot = await FirebaseFirestore.instance   
+    .collection('households')
+    .doc(currUserModel!.currHouse)
+    .collection('chores')
+    .doc(choreId)
+    .get();
+
+    if (choreSnapshot.exists) {
+    var choreData = choreSnapshot.data() as Map<String, dynamic>;
+
+    // Assigning chore fields to variables
+    String choreName = choreData['choreName'] ?? '';
+    String? assignee = choreData['assignee'];
+    DateTime? deadline = choreData['deadline'] != null
+        ? (choreData['deadline'] as Timestamp).toDate()
+        : null;
+
+    // Now you have choreName, assignee, deadline, and timelength as variables
+    // You can use these variables as needed
+
+    start = deadline!.subtract(Duration(hours:1));
+    end = deadline;
+
+    final event = {
+      'name': choreName,
+      'start': start,
+      'end': end,
+      'user': assignee, // Placeholder for user name, replace with actual user name
+    };
+
+    FirebaseFirestore.instance
+      .collection('households')
+      .doc(currUserModel!.currHouse) // Use the household ID obtained from Firestore
+      .collection('events')
+      .add(event);
+
+    FirebaseFirestore.instance   
+    .collection('households')
+    .doc(currUserModel!.currHouse)
+    .collection('chores')
+    .doc(choreId)
+    .update({'inCalendar':true});
+    
+
+
+    //TODOOOOO
+    //Check for unique name for event (see if event already has that name)
+    //adding user prefences 
+    
+
+    
+
+    // Add your code to use these variables
+    // For example, adding to a calendar or any other processing
+    }
+        
+
   }
 
   void _reassignChoreOnClaim(String choreName, String choreId, String assignee,
@@ -119,6 +185,7 @@ class _ToDoListState extends State<ToDoList> {
       'assignee': newAssigneeUser,
       'deadline': deadline,
       'timelength': timelength,
+      'inCalendar': false,
     });
   }
 
@@ -223,6 +290,7 @@ class _ToDoListState extends State<ToDoList> {
                       ? (choreData['deadline'] as Timestamp).toDate()
                       : null;
                   var timelength = choreData['timelength'];
+                  var inCalendar = choreData['inCalendar'];
 
                   if (deadline != null) {
                     formattedDate =
@@ -310,7 +378,7 @@ class _ToDoListState extends State<ToDoList> {
                               IconButton(
                                 icon: Icon(Icons.edit),
                                 onPressed: () {
-                                  _showEditChoreDialog(choreName, choreId, assignee,
+                                  _showEditChoreDialog(choreName, choreId, assignee,    /////////////here
                                       deadline, timelength);
                                 },
                               ),
@@ -320,6 +388,23 @@ class _ToDoListState extends State<ToDoList> {
                                   _deleteChore(choreId);
                                 },
                               ),
+                              Visibility(
+                                visible: !inCalendar,
+                                child:
+                                IconButton(
+                                icon: Icon(Icons.calendar_month),
+                                onPressed: () {
+                                  if(assignee == currUserModel!.email){
+                                    _addTocalendar(choreId);
+                                  }
+                                  else{
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text('This event is not assigned to you.'),
+                                    ));
+                                  }
+                                },
+                              ),
+                              )
                             ],
                           ),
                         ],

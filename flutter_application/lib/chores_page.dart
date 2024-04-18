@@ -135,33 +135,53 @@ class _ToDoListState extends State<ToDoList> {
     // Now you have choreName, assignee, deadline, and timelength as variables
     // You can use these variables as needed
 
-    start = deadline!.subtract(Duration(hours:1));
-    end = deadline;
+    start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
+    end = DateTime(deadline.year, deadline.month, deadline.day, 18, 0);   // 6pm
+    bool hasConflict = await _checkForTimeConflicts(start, end);
+    //bool hasConflict = false;
 
-    final event = {
-      'name': choreName,
-      'start': start,
-      'end': end,
-      'user': assignee, // Placeholder for user name, replace with actual user name
-    };
+    if (!hasConflict) {
+      
 
-    FirebaseFirestore.instance
+      final event = {
+        'name': choreName,
+        'start': start,
+        'end': end,
+        'user': assignee, // Placeholder for user name, replace with actual user name
+      };
+
+      FirebaseFirestore.instance
+        .collection('households')
+        .doc(currUserModel!.currHouse) // Use the household ID obtained from Firestore
+        .collection('events')
+        .add(event);
+
+      FirebaseFirestore.instance   
       .collection('households')
-      .doc(currUserModel!.currHouse) // Use the household ID obtained from Firestore
-      .collection('events')
-      .add(event);
+      .doc(currUserModel!.currHouse)
+      .collection('chores')
+      .doc(choreId)
+      .update({'inCalendar':true});
 
-    FirebaseFirestore.instance   
-    .collection('households')
-    .doc(currUserModel!.currHouse)
-    .collection('chores')
-    .doc(choreId)
-    .update({'inCalendar':true});
+  
+    }
+
+    else{
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chore has too many time conflicts could not add to calendar.'),
+        ),
+      );
+    }
+
+
+    
     
 
 
     //TODOOOOO
     //Check for unique name for event (see if event already has that name)
+    //range 5-9pm for chore
     //adding user prefences 
     
 
@@ -172,6 +192,30 @@ class _ToDoListState extends State<ToDoList> {
     }
         
 
+  }
+
+  Future<bool> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd) async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+      .collection('households')
+      .doc(currUserModel!.currHouse)
+      .collection('events')
+      .get();
+    
+
+    List<Map<String, dynamic>> events = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+  // Check for conflicts in the list of events
+    bool hasConflict = events.any((event) {
+      DateTime eventStart = (event['start'] as Timestamp).toDate();
+      DateTime eventEnd = (event['end'] as Timestamp).toDate();
+
+      return eventStart == choreStart ||
+            eventEnd == choreEnd ||
+            (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
+            (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart));
+    });
+
+    return hasConflict;
   }
 
   void _reassignChoreOnClaim(String choreName, String choreId, String assignee,

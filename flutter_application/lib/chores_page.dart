@@ -292,6 +292,7 @@ class _ToDoListState extends State<ToDoList> {
                                           : TextDecoration.none,
                                         color: textColor,
                                       )),
+                                if (timelength != null)
                                 Text('Est. Time: $timelength',
                                     style: TextStyle(
                                       decoration: isCompleted

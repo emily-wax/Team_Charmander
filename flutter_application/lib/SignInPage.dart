@@ -8,7 +8,7 @@ import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
 class SignInPage extends StatefulWidget {
-  const SignInPage({super.key});
+  const SignInPage({Key? key});
 
   @override
   _SignInPageState createState() => _SignInPageState();
@@ -18,6 +18,7 @@ class _SignInPageState extends State<SignInPage> {
   final AuthService authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController(); // New controller for confirm password
   final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
   bool isSignUp = false;
@@ -29,8 +30,8 @@ class _SignInPageState extends State<SignInPage> {
       appBar: AppBar(
         title: Text(isSignUp ? 'Sign Up' : 'Sign In'),
       ),
-      body: Container( 
-        color: Colors.white,// Soft green background
+      body: Container(
+        color: Colors.white, // Soft green background
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -52,7 +53,6 @@ class _SignInPageState extends State<SignInPage> {
                   labelText: 'Email',
                   filled: true,
                   fillColor: Color.fromARGB(221, 235, 231, 231),
-                  
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -77,12 +77,36 @@ class _SignInPageState extends State<SignInPage> {
                   return null;
                 },
               ),
+              if (isSignUp) // Render "Re-enter Password" field only if it's a sign-up page
+                Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: confirmPasswordController, // New TextFormField for confirming password
+                      decoration: const InputDecoration(
+                        labelText: 'Re-enter Password', // Label for confirmation password
+                        filled: true,
+                        fillColor: Color.fromARGB(221, 235, 231, 231),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return 'Please re-enter your password';
+                        }
+                        if (value != passwordController.text) { // Check if passwords match
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               const SizedBox(height: 20),
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                "Password must be at least 6 characters.",
-                textAlign: TextAlign.left
+                  "Password must be at least 6 characters.",
+                  textAlign: TextAlign.left,
                 ),
               ),
               ElevatedButton(
@@ -129,7 +153,7 @@ class _SignInPageState extends State<SignInPage> {
         if (isSignUp) {
           // Sign Up
           await authService.signUpWithEmailAndPassword(email, password);
-          
+
           // adds user to database when signing up
           _createData(UserModel('0', email, "", false, {'cleaner': 0.5, 'evening': 0.5, 'morning': 0.5, 'organizer': 0.5, 'outdoor': 0.5}));
 
@@ -163,18 +187,18 @@ class _SignInPageState extends State<SignInPage> {
 
   // Creates user data
   void _createData(UserModel userModel) {
-      final userCollection = FirebaseFirestore.instance.collection("users");
+    final userCollection = FirebaseFirestore.instance.collection("users");
 
-      String id = userCollection.doc().id;
+    String id = userCollection.doc().id;
 
-      final newUser = UserModel(
-        id,
-        userModel.email, 
-        userModel.currHouse,
-        userModel.darkMode,
-        userModel.preferences
-      ).toJson();
+    final newUser = UserModel(
+      id,
+      userModel.email,
+      userModel.currHouse,
+      userModel.darkMode,
+      userModel.preferences,
+    ).toJson();
 
-      userCollection.doc(id).set(newUser);
+    userCollection.doc(id).set(newUser);
   }
 }

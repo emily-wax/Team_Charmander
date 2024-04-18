@@ -206,6 +206,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
             // }
           },
         ),
+        
       ],
       ),
       ],

@@ -137,10 +137,11 @@ class _ToDoListState extends State<ToDoList> {
 
     start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
     end = DateTime(deadline.year, deadline.month, deadline.day, 18, 0);   // 6pm
-    bool hasConflict = await _checkForTimeConflicts(start, end);
+    start = await _checkForTimeConflicts(start, end);
+    end = start.add(Duration(hours: 1));
     //bool hasConflict = false;
 
-    if (!hasConflict) {
+    if (start!=null) {  //not implemented to be null yet
       
 
       final event = {
@@ -183,6 +184,7 @@ class _ToDoListState extends State<ToDoList> {
     //Check for unique name for event (see if event already has that name)
     //range 5-9pm for chore
     //adding user prefences 
+  
     
 
     
@@ -194,28 +196,35 @@ class _ToDoListState extends State<ToDoList> {
 
   }
 
-  Future<bool> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd) async {
+  Future<DateTime> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd) async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance
       .collection('households')
       .doc(currUserModel!.currHouse)
       .collection('events')
       .get();
-    
+    bool hasConflict = false;
 
     List<Map<String, dynamic>> events = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
-  // Check for conflicts in the list of events
-    bool hasConflict = events.any((event) {
+    for (var event in events){
       DateTime eventStart = (event['start'] as Timestamp).toDate();
       DateTime eventEnd = (event['end'] as Timestamp).toDate();
 
-      return eventStart == choreStart ||
-            eventEnd == choreEnd ||
-            (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
-            (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart));
-    });
+      if(eventStart == choreStart || eventEnd == choreEnd || 
+        (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
+            (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart))){
+        choreStart = eventEnd.add(Duration(minutes: 15));
+        choreEnd = choreStart.add(Duration(hours: 1));
+        _checkForTimeConflicts(choreStart, choreEnd);
 
-    return hasConflict;
+      }
+    }
+
+  // Check for conflicts in the list of events
+  // set limit for duration prob at 9pm???
+  //
+
+    return choreStart;
   }
 
   void _reassignChoreOnClaim(String choreName, String choreId, String assignee,

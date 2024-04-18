@@ -23,7 +23,7 @@ class _ChoresPageState extends State<ChoresPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void _addChoreToFirestoreDrop(String choreName, String? assignee,
-      Timestamp? deadline, String? timelength) {
+      Timestamp? deadline, int? timelength) {
     if (autoAssignChecked) {
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result) {
@@ -62,7 +62,7 @@ class _ChoresPageState extends State<ChoresPage> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName,
-      String? assignee, Timestamp? deadline, String? timelength) async {
+      String? assignee, Timestamp? deadline, int? timelength) async {
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -155,9 +155,9 @@ class _ChoresPageState extends State<ChoresPage> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
-  String? selectedTimelength;
+  int? selectedTimelength;
   List<String> _users = [];
-  final List<String> _timelengths = ['5m', '10m', '15m', '30m', '60m'];
+  final List<int> _timelengths = [5, 15, 30, 60];
 
   @override
   Widget build(BuildContext context) {
@@ -373,10 +373,10 @@ Widget buildChoresPage() {
 
 
   void _showEditChoreDialog(String choreName, String choreId, String assignee,
-      DateTime? deadline, String timelength) {
+      DateTime? deadline, int timelength) {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
-    String? editedTimelength = timelength;
+    int? editedTimelength = timelength;
 
     showDialog(
       context: context,
@@ -477,17 +477,17 @@ Widget buildChoresPage() {
                     ),
                     Column(
                       children: [
-                        DropdownButtonFormField<String>(
+                        DropdownButtonFormField<int>(
                           value: editedTimelength,
-                          onChanged: (String? newValue) {
+                          onChanged: (int? newValue) {
                             setState(() {
                               editedTimelength = newValue;
                             });
                           },
-                          items: _timelengths.map((String value) {
-                            return DropdownMenuItem<String>(
+                          items: _timelengths.map((int value) {
+                            return DropdownMenuItem<int>(
                               value: value,
-                              child: Text(value),
+                              child: Text(value.toString()),
                             );
                           }).toList(),
                           hint: const Text('Select Time Estimate'),
@@ -507,7 +507,7 @@ Widget buildChoresPage() {
                         : null;
 
                     if (editedTimelength == null) {
-                      editedTimelength = '15m';
+                      editedTimelength = 5;
                     }
 
                     if (editedChoreName.isNotEmpty) {
@@ -639,17 +639,17 @@ Widget buildChoresPage() {
                   ),
                   Column(
                     children: [
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<int>(
                         value: selectedTimelength,
-                        onChanged: (String? newValue) {
+                        onChanged: (int? newValue) {
                           setState(() {
                             selectedTimelength = newValue;
                           });
                         },
-                        items: _timelengths.map((String value) {
-                          return DropdownMenuItem<String>(
+                        items: _timelengths.map((int value) {
+                          return DropdownMenuItem<int>(
                             value: value,
-                            child: Text(value),
+                            child: Text(value.toString()),
                           );
                         }).toList(),
                         hint: const Text('Select Time Estimate'),
@@ -678,7 +678,7 @@ Widget buildChoresPage() {
                     : null;
 
                 if (selectedTimelength == null) {
-                  selectedTimelength = '15m';
+                  selectedTimelength = 5;
                 }
 
                 if (choreName.isNotEmpty) {

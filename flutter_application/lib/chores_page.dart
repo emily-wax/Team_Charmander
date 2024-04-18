@@ -308,7 +308,7 @@ Widget buildChoresPage() {
                                       color: textColor,
                                     )),
                               if (timelength != null)
-                                Text('Est. Time: $timelength',
+                                Text('Time: ${timelength}m',
                                     style: TextStyle(
                                       color: textColor,
                                     ))
@@ -487,7 +487,7 @@ Widget buildChoresPage() {
                           items: _timelengths.map((int value) {
                             return DropdownMenuItem<int>(
                               value: value,
-                              child: Text(value.toString()),
+                              child: Text('$value min.'),
                             );
                           }).toList(),
                           hint: const Text('Select Time Estimate'),
@@ -649,7 +649,7 @@ Widget buildChoresPage() {
                         items: _timelengths.map((int value) {
                           return DropdownMenuItem<int>(
                             value: value,
-                            child: Text(value.toString()),
+                            child: Text('$value min.'),
                           );
                         }).toList(),
                         hint: const Text('Select Time Estimate'),

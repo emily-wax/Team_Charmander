@@ -9,21 +9,21 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
-class ToDoList extends StatefulWidget {
-  const ToDoList({Key? key}) : super(key: key);
+class ChoresPage extends StatefulWidget {
+  const ChoresPage({Key? key}) : super(key: key);
 
   @override
-  _ToDoListState createState() => _ToDoListState();
+  _ChoresPageState createState() => _ChoresPageState();
 }
 
-class _ToDoListState extends State<ToDoList> {
+class _ChoresPageState extends State<ChoresPage> {
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void _addChoreToFirestoreDrop(String choreName, String? assignee,
-      Timestamp? deadline, String? timelength) {
+      Timestamp? deadline, int? timelength) {
     if (autoAssignChecked) {
       AutoAssignClass auto = AutoAssignClass();
       auto.autoAssignChore(choreName).then((String result) {
@@ -64,7 +64,7 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName,
-      String? assignee, Timestamp? deadline, String? timelength) async {   //delete calendar event upon updating
+      String? assignee, Timestamp? deadline, int? timelength) async { //delete calendar event upon updating
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -299,9 +299,9 @@ class _ToDoListState extends State<ToDoList> {
   bool autoAssignChecked = false;
   DateTime? selectedDate;
   String? selectedUser;
-  String? selectedTimelength;
+  int? selectedTimelength;
   List<String> _users = [];
-  final List<String> _timelengths = ['5m', '10m', '15m', '30m', '60m'];
+  final List<int> _timelengths = [5, 15, 30, 60];
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +309,7 @@ class _ToDoListState extends State<ToDoList> {
     theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('To-Do List'),
+        title: const Text('Chores'),
       ),
       body: FutureBuilder<UserModel>(
         future: readData(),
@@ -333,24 +333,45 @@ class _ToDoListState extends State<ToDoList> {
     );
   }
 
-  Widget buildChoresPage() {
-    String formattedDate = "";
-    bool assigneeMatchesCurrUser = false;
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('households')
-          .doc(currUserModel!.currHouse)
-          .collection('chores')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        var chores = snapshot.data!.docs;
-        List<Widget> choreWidgets = [];
-        Color textColor = Colors.grey;
+Widget buildChoresPage() {
+  String formattedDate = "";
+  bool assigneeMatchesCurrUser = false;
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('households')
+        .doc(currUserModel!.currHouse)
+        .collection('chores')
+        .snapshots(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Text(
+                  "Press the + to add a chore!",
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ),
+            ),
+            Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
+              onPressed: () {
+                assigneeController.clear();
+                titleController.clear();
+                _showAddTaskDialog(context);
+              },
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: theme.buttonColor, // Customize as needed
+            ),
+          ),
+          ],
+        );
+      }
+      var chores = snapshot.data!.docs;
+      List<Widget> choreWidgets = [];
+      Color textColor = Colors.grey;
 
         return Column(
           children: [
@@ -370,68 +391,69 @@ class _ToDoListState extends State<ToDoList> {
                   var timelength = choreData['timelength'];
                   var inCalendar = choreData['inCalendar'];
 
-                  if (deadline != null) {
-                    formattedDate =
-                        '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
-                  }
+                if (deadline != null) {
+                  formattedDate =
+                      '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+                }
 
-                  if (assignee == currUserModel!.email) {
-                    assigneeMatchesCurrUser = true;
-                    textColor = Colors.blue;
-                  } else {
-                    assigneeMatchesCurrUser = false;
-                    textColor = Colors.grey;
-                  }
+                if (assignee == currUserModel!.email) {
+                  assigneeMatchesCurrUser = true;
+                  textColor = Colors.blue;
+                } else {
+                  assigneeMatchesCurrUser = false;
+                  textColor = Colors.grey;
+                }
 
-                  return Container(
-                    margin: EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ListTile(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      title: Row(
-                        children: [
-                          Checkbox(
-                            value: isCompleted,
-                            activeColor: theme.buttonColor,
-                            onChanged: (value) {
-                              FirebaseFirestore.instance
-                                  .collection('households')
-                                  .doc(currUserModel!.currHouse)
-                                  .collection('chores')
-                                  .doc(choreId)
-                                  .update({'isCompleted': value});
-                            },
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '$choreName',
-                                  style: TextStyle(
-                                    decoration: isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: textColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18
-                                  ),
+                return Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListTile(
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    title: Row(
+                      children: [
+                        Checkbox(
+                          value: isCompleted,
+                          activeColor: theme.buttonColor,
+                          onChanged: (value) {
+                            FirebaseFirestore.instance
+                                .collection('households')
+                                .doc(currUserModel!.currHouse)
+                                .collection('chores')
+                                .doc(choreId)
+                                .update({'isCompleted': value});
+                          },
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$choreName',
+                                style: TextStyle(
+                                  decoration: isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: textColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18
                                 ),
-                                Text('Do: $assignee',
-                                  style: TextStyle(
-                                    color: textColor,
-                                  )),
-                                if (deadline != null)
-                                  Text('Due: $formattedDate',
-                                      style: TextStyle(
-                                        color: textColor,
-                                      )),
-                                Text('Est. Time: $timelength',
+                              ),
+                              Text('Do: $assignee',
+                                style: TextStyle(
+                                  color: textColor,
+                                )),
+                              if (deadline != null)
+                                Text('Due: $formattedDate',
+                                    style: TextStyle(
+                                      color: textColor,
+                                    )),
+                              if (timelength != null)
+                                Text('Time: ${timelength}m',
                                     style: TextStyle(
                                       color: textColor,
                                     ))
@@ -495,26 +517,31 @@ class _ToDoListState extends State<ToDoList> {
                 },
               ),
             ),
-            FloatingActionButton(
+            Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
               onPressed: () {
                 assigneeController.clear();
                 titleController.clear();
                 _showAddTaskDialog(context);
               },
-              child: Icon(Icons.add),
-              backgroundColor: Colors.blue, // Customize as needed
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: theme.buttonColor, // Customize as needed
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
 
   void _showEditChoreDialog(String choreName, String choreId, String assignee,
-      DateTime? deadline, String timelength) {
+      DateTime? deadline, int timelength) {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
-    String? editedTimelength = timelength;
+    int? editedTimelength = timelength;
 
     showDialog(
       context: context,
@@ -615,17 +642,17 @@ class _ToDoListState extends State<ToDoList> {
                     ),
                     Column(
                       children: [
-                        DropdownButtonFormField<String>(
+                        DropdownButtonFormField<int>(
                           value: editedTimelength,
-                          onChanged: (String? newValue) {
+                          onChanged: (int? newValue) {
                             setState(() {
                               editedTimelength = newValue;
                             });
                           },
-                          items: _timelengths.map((String value) {
-                            return DropdownMenuItem<String>(
+                          items: _timelengths.map((int value) {
+                            return DropdownMenuItem<int>(
                               value: value,
-                              child: Text(value),
+                              child: Text('$value min.'),
                             );
                           }).toList(),
                           hint: const Text('Select Time Estimate'),
@@ -645,7 +672,7 @@ class _ToDoListState extends State<ToDoList> {
                         : null;
 
                     if (editedTimelength == null) {
-                      editedTimelength = '15m';
+                      editedTimelength = 5;
                     }
 
                     if (editedChoreName.isNotEmpty) {
@@ -777,17 +804,17 @@ class _ToDoListState extends State<ToDoList> {
                   ),
                   Column(
                     children: [
-                      DropdownButtonFormField<String>(
+                      DropdownButtonFormField<int>(
                         value: selectedTimelength,
-                        onChanged: (String? newValue) {
+                        onChanged: (int? newValue) {
                           setState(() {
                             selectedTimelength = newValue;
                           });
                         },
-                        items: _timelengths.map((String value) {
-                          return DropdownMenuItem<String>(
+                        items: _timelengths.map((int value) {
+                          return DropdownMenuItem<int>(
                             value: value,
-                            child: Text(value),
+                            child: Text('$value min.'),
                           );
                         }).toList(),
                         hint: const Text('Select Time Estimate'),
@@ -816,7 +843,7 @@ class _ToDoListState extends State<ToDoList> {
                     : null;
 
                 if (selectedTimelength == null) {
-                  selectedTimelength = '15m';
+                  selectedTimelength = 5;
                 }
 
                 if (choreName.isNotEmpty) {

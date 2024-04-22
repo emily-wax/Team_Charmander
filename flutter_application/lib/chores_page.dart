@@ -201,7 +201,6 @@ class _ToDoListState extends State<ToDoList> {
 
   Future<Object?> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd, DateTime day) async {
 
-
     QuerySnapshot snapshot = await FirebaseFirestore.instance
       .collection('households')
       .doc(currUserModel!.currHouse)

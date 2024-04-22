@@ -113,8 +113,8 @@ class _ToDoListState extends State<ToDoList> {
   }
 
   void _addTocalendar(String choreId) async{                ///////////////here
-    DateTime start;
-    DateTime end;
+    DateTime? start;
+    DateTime? end;
     DocumentSnapshot choreSnapshot = await FirebaseFirestore.instance   
     .collection('households')
     .doc(currUserModel!.currHouse)
@@ -128,21 +128,24 @@ class _ToDoListState extends State<ToDoList> {
     // Assigning chore fields to variables
     String choreName = choreData['choreName'] ?? '';
     String? assignee = choreData['assignee'];
+    //int choreDuration = choreData['timelength'];
     DateTime? deadline = choreData['deadline'] != null
         ? (choreData['deadline'] as Timestamp).toDate()
         : null;
+
+    // TODO: correlate taken duration with correct time
 
     // Now you have choreName, assignee, deadline, and timelength as variables
     // You can use these variables as needed
 
     start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
     end = DateTime(deadline.year, deadline.month, deadline.day, 18, 0);   // 6pm
-    start = await _checkForTimeConflicts(start, end);
-    end = start.add(Duration(hours: 1));
-    //bool hasConflict = false;
+    DateTime day = DateTime(deadline.year, deadline.month, deadline.day, 0, 0); // midnight the day of the deadline
 
-    if (start!=null) {  //not implemented to be null yet
-      
+    start = (await _checkForTimeConflicts(start, end, day )) as DateTime?;
+    end = start?.add(Duration(hours: 1));
+
+    if (start!= null) {
 
       final event = {
         'name': choreName,
@@ -164,6 +167,12 @@ class _ToDoListState extends State<ToDoList> {
       .doc(choreId)
       .update({'inCalendar':true});
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chore successfully added to calendar.'),
+        ),
+      );
+
   
     }
 
@@ -175,14 +184,8 @@ class _ToDoListState extends State<ToDoList> {
       );
     }
 
-
-    
-    
-
-
     //TODOOOOO
     //Check for unique name for event (see if event already has that name)
-    //range 5-9pm for chore
     //adding user prefences 
   
     
@@ -196,13 +199,16 @@ class _ToDoListState extends State<ToDoList> {
 
   }
 
-  Future<DateTime> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd) async {
+  Future<Object?> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd, DateTime day) async {
+
+
     QuerySnapshot snapshot = await FirebaseFirestore.instance
       .collection('households')
       .doc(currUserModel!.currHouse)
       .collection('events')
+      .where('start', isGreaterThanOrEqualTo: day)  // Filter events starting from 'day'
+      .where('start', isLessThan: day.add(Duration(days: 1)))  // Filter events ending before the next day
       .get();
-    bool hasConflict = false;
 
     List<Map<String, dynamic>> events = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
@@ -210,19 +216,38 @@ class _ToDoListState extends State<ToDoList> {
       DateTime eventStart = (event['start'] as Timestamp).toDate();
       DateTime eventEnd = (event['end'] as Timestamp).toDate();
 
+      // Adjust the time if a conflict is found
       if(eventStart == choreStart || eventEnd == choreEnd || 
         (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
-            (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart))){
-        choreStart = eventEnd.add(Duration(minutes: 15));
-        choreEnd = choreStart.add(Duration(hours: 1));
-        _checkForTimeConflicts(choreStart, choreEnd);
+        (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart))){
 
+            choreStart = eventEnd.add(Duration(minutes: 15));
+            
+
+            if ( choreStart.hour >= 21){
+              // reset choreStart to 5pm the day before
+              int hourDifference = choreStart.hour - 17;
+              choreStart = choreStart.subtract(Duration(hours: hourDifference));
+
+              choreStart = choreStart.subtract(Duration(days: 1));
+              choreEnd = choreStart.add(Duration(hours: 1));
+              day = day.subtract(Duration(days: 1));
+
+
+              if(choreStart.isAfter(DateTime.now())){
+                return _checkForTimeConflicts(choreStart, choreEnd, day);
+              } else {
+                return null;
+              }
+
+              
+            } else{
+              choreEnd = choreStart.add(Duration(hours: 1));
+              return _checkForTimeConflicts(choreStart, choreEnd, day);
+            }
+            
       }
     }
-
-  // Check for conflicts in the list of events
-  // set limit for duration prob at 9pm???
-  //
 
     return choreStart;
   }
@@ -443,15 +468,18 @@ class _ToDoListState extends State<ToDoList> {
                                 },
                               ),
                               Visibility(
-                                visible: !inCalendar,
+                                visible: !inCalendar && (deadline != null),
                                 child:
                                 IconButton(
                                 icon: Icon(Icons.calendar_month),
                                 onPressed: () {
                                   if(assignee == currUserModel!.email){
                                     _addTocalendar(choreId);
-                                  }
-                                  else{
+                                  } else if (deadline == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text('This event does not have a deadline and cannot be added to the calendar.'),
+                                    ));
+                                  }else{
                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                       content: Text('This event is not assigned to you.'),
                                     ));

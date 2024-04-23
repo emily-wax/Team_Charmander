@@ -6,15 +6,38 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
-class AppliancesPage extends StatefulWidget {
-  const AppliancesPage({Key? key}) : super(key: key);
-
-  @override
-  _AppliancesPageState createState() => _AppliancesPageState();
+abstract class FirestoreService {
+  Future<void> addAppliance(String? householdId, String applianceName);
 }
 
-class _AppliancesPageState extends State<AppliancesPage> {
-  final TextEditingController _applianceNameController = TextEditingController();
+class FirestoreServiceImpl implements FirestoreService {
+  @override
+  Future<void> addAppliance(String? householdId, String applianceName) async {
+    await FirebaseFirestore.instance
+        .collection('households')
+        .doc(householdId)
+        .collection('appliances')
+        .doc(applianceName)
+        .set({
+      'claimed': false,
+      'claimedBy': null,
+      'claimedAt': null,
+    });
+  }
+}
+
+class AppliancesPage extends StatefulWidget {
+  final FirestoreService firestoreService;
+
+  const AppliancesPage({Key? key, required this.firestoreService})
+      : super(key: key);
+
+  @override
+  AppliancesPageState createState() => AppliancesPageState();
+}
+
+class AppliancesPageState extends State<AppliancesPage> {
+  final TextEditingController applianceNameController = TextEditingController();
   UserModel? currUserModel;
 
   @override
@@ -163,7 +186,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
           content: TextField(
             maxLength: 15,
             cursorColor: theme.buttonColor,
-            controller: _applianceNameController,
+            controller: applianceNameController,
             decoration: InputDecoration(
               hintText: 'Enter appliance name',
               focusedBorder: OutlineInputBorder(
@@ -182,7 +205,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
             TextButton(
               style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
               onPressed: () {
-                _addAppliance(_applianceNameController.text);
+                addAppliance(applianceNameController.text);
                 Navigator.of(context).pop();
               },
               child: Text('Add', style: TextStyle(color: theme.textColor)),
@@ -266,21 +289,45 @@ class _AppliancesPageState extends State<AppliancesPage> {
   }
 
   // TODO: make sure user is in a household
-  void _addAppliance(String applianceName) async {
-    // Add a new appliance to Firestore
+  // void _addAppliance(String applianceName) async {
+  //   // Add a new appliance to Firestore
 
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceName).set({
-      'claimed': false,
-      'claimedBy': null,
-      'claimedAt': null, // Initialize claimedAt as null
-    }).then((_) {
-      // Clear the text field after adding the appliance
-      _applianceNameController.clear();
-    }).catchError((error) {
-      // Handle any errors that occur during adding the appliance
+  //   FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceName).set({
+  //     'claimed': false,
+  //     'claimedBy': null,
+  //     'claimedAt': null, // Initialize claimedAt as null
+  //   }).then((_) {
+  //     // Clear the text field after adding the appliance
+  //     _applianceNameController.clear();
+  //   }).catchError((error) {
+  //     // Handle any errors that occur during adding the appliance
+  //     print('Error adding appliance: $error');
+  //   });
+  // }
+
+  Future<void> addAppliance(String applianceName) async {
+    try {
+       if (currUserModel == null) {
+        throw Exception('User or current household is null');
+      }
+      // else {
+      //   throw Exception('Debugging room only');
+      // }
+      if (currUserModel!.currHouse == null){
+        print("test");
+        await widget.firestoreService
+          .addAppliance(currUserModel!.currHouse, applianceName);
+      applianceNameController.clear();
+    } 
+    else{
+      print("testes");
+    }
+    }catch (error) {
       print('Error adding appliance: $error');
-    });
+    }
   }
+
+  
 
   void _confirmDeleteAppliance(String applianceId) {
     showDialog(
@@ -323,7 +370,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
   @override
   void dispose() {
     // Dispose the controller when the widget is disposed
-    _applianceNameController.dispose();
+    applianceNameController.dispose();
     super.dispose();
   }
 }

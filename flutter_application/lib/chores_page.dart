@@ -200,40 +200,34 @@ class _ChoresPageState extends State<ChoresPage> {
           .orderBy('isCompleted', descending: false)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        var chores = snapshot.data!.docs;
-        // List<Widget> choreWidgets = [];
-        Color textColor = Colors.grey;
-        
-        return Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Text(
-                  "Press the + to add a chore!",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "Press the + to add a chore!",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
-            child: FloatingActionButton(
-              onPressed: () {
-                assigneeController.clear();
-                titleController.clear();
-                _showAddTaskDialog(context);
-              },
-              child: Icon(Icons.add, color: Colors.white),
-              backgroundColor: theme.buttonColor, // Customize as needed
+              Padding(
+                padding: const EdgeInsets.only(
+                    bottom: 20.0), // Adjust the padding as needed
+                child: FloatingActionButton(
+                  onPressed: () {
+                    assigneeController.clear();
+                    titleController.clear();
+                    _showAddTaskDialog(context);
+                  },
+                  child: Icon(Icons.add, color: Colors.white),
+                  backgroundColor: theme.buttonColor, // Customize as needed
             ),
           ),
           ],
         );
       }
+
       var chores = snapshot.data!.docs;
       List<Widget> choreWidgets = [];
       Color textColor = Colors.grey;
@@ -375,9 +369,11 @@ class _ChoresPageState extends State<ChoresPage> {
           ),
         ],
       );
-    },
+  },
   );
-}
+    }
+  
+
 
 
 

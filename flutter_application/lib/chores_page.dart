@@ -189,17 +189,26 @@ class _ChoresPageState extends State<ChoresPage> {
     );
   }
 
-Widget buildChoresPage() {
-  String formattedDate = "";
-  bool assigneeMatchesCurrUser = false;
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance
-        .collection('households')
-        .doc(currUserModel!.currHouse)
-        .collection('chores')
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+  Widget buildChoresPage() {
+    String formattedDate = "";
+    bool assigneeMatchesCurrUser = false;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('households')
+          .doc(currUserModel!.currHouse)
+          .collection('chores')
+          .orderBy('isCompleted', descending: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+        var chores = snapshot.data!.docs;
+        // List<Widget> choreWidgets = [];
+        Color textColor = Colors.grey;
+        
         return Column(
           children: [
             Expanded(
@@ -377,6 +386,7 @@ Widget buildChoresPage() {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
     int? editedTimelength = timelength;
+    const customBlue = Color(0xFF3366FF);
 
     showDialog(
       context: context,
@@ -471,8 +481,9 @@ Widget buildChoresPage() {
                           ),
                         ),
                         Text(deadline != null
-                            ? '${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}-${deadline!.year.toString().substring(2)}'
-                            : ''),
+                            ? '${deadline!.month.toString().padLeft(2, '0')}/${deadline!.day.toString().padLeft(2, '0')}/${deadline!.year.toString().substring(2)}'
+                            : '',
+                            style: const TextStyle(color: customBlue)),
                       ],
                     ),
                     Column(
@@ -539,6 +550,8 @@ Widget buildChoresPage() {
   }
 
   void _showAddTaskDialog(BuildContext context) {
+    const customBlue = Color(0xFF3366FF);
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -623,18 +636,16 @@ Widget buildChoresPage() {
                             });
                           }
                         },
-                        child: Text(
-                          selectedDate != null
-                              ? 'Change Deadline'
-                              : 'Set Deadline...',
+                        child: const Text(
+                          'Set Deadline...',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
-                      if (selectedDate != null)
-                        Text(
-                          'Deadline: $selectedDate',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                      Text(
+                          selectedDate != null
+                              ? '${selectedDate!.month.toString().padLeft(2, '0')}/${selectedDate!.day.toString().padLeft(2, '0')}/${selectedDate!.year.toString().substring(2)}'
+                              : '',
+                          style: const TextStyle(color: customBlue)),
                     ],
                   ),
                   Column(

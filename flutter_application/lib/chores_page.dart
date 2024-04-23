@@ -9,14 +9,14 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
-class ToDoList extends StatefulWidget {
-  const ToDoList({Key? key}) : super(key: key);
+class ChoresPage extends StatefulWidget {
+  const ChoresPage({Key? key}) : super(key: key);
 
   @override
-  _ToDoListState createState() => _ToDoListState();
+  _ChoresPageState createState() => _ChoresPageState();
 }
 
-class _ToDoListState extends State<ToDoList> {
+class _ChoresPageState extends State<ChoresPage> {
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
@@ -165,7 +165,7 @@ class _ToDoListState extends State<ToDoList> {
     theme = themeProvider;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('To-Do List'),
+        title: const Text('Chores'),
       ),
       body: FutureBuilder<UserModel>(
         future: readData(),
@@ -208,153 +208,178 @@ class _ToDoListState extends State<ToDoList> {
         var chores = snapshot.data!.docs;
         // List<Widget> choreWidgets = [];
         Color textColor = Colors.grey;
-
+        
         return Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.all(8),
-                itemCount: chores.length,
-                itemBuilder: (context, index) {
-                  var choreData = chores[index].data() as Map<String, dynamic>;
-                  var choreId = chores[index].id;
-                  var choreName = choreData['choreName'];
-                  var assignee = choreData['assignee'];
-                  var isCompleted = choreData['isCompleted'];
-                  var deadline = choreData['deadline'] != null
-                      ? (choreData['deadline'] as Timestamp).toDate()
-                      : null;
-                  var timelength = choreData['timelength'];
-
-                  if (deadline != null) {
-                    formattedDate =
-                        '${deadline.month.toString().padLeft(2, '0')}/${deadline.day.toString().padLeft(2, '0')}/${deadline.year.toString().substring(2)}';
-                  }
-
-                  if (assignee == currUserModel!.email) {
-                    assigneeMatchesCurrUser = true;
-                    textColor = Colors.blue;
-                  } else {
-                    assigneeMatchesCurrUser = false;
-                    textColor = Colors.grey;
-                  }
-
-                  return Container(
-                    margin: EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ListTile(
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      title: Row(
-                        children: [
-                          Checkbox(
-                            value: isCompleted,
-                            activeColor: theme.buttonColor,
-                            onChanged: (value) {
-                              FirebaseFirestore.instance
-                                  .collection('households')
-                                  .doc(currUserModel!.currHouse)
-                                  .collection('chores')
-                                  .doc(choreId)
-                                  .update({'isCompleted': value});
-                            },
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '$choreName',
-                                  style: TextStyle(
-                                    decoration: isCompleted
-                                      ? TextDecoration.lineThrough
-                                      : TextDecoration.none,
-                                    color: textColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18
-                                  ),
-                                ),
-                                Text('Do: $assignee',
-                                  style: TextStyle(
-                                    decoration: isCompleted
-                                      ? TextDecoration.lineThrough
-                                      : TextDecoration.none,
-                                    color: textColor,
-                                  )),
-                                if (deadline != null)
-                                  Text('Due: $formattedDate',
-                                      style: TextStyle(
-                                        decoration: isCompleted
-                                          ? TextDecoration.lineThrough
-                                          : TextDecoration.none,
-                                        color: textColor,
-                                      )),
-                                if (timelength != null)
-                                Text('Est. Time: $timelength',
-                                    style: TextStyle(
-                                      decoration: isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                      color: textColor,
-                                    ))
-                              ],
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              if (!assigneeMatchesCurrUser)
-                                IconButton(
-                                  icon: const Icon(Icons.transfer_within_a_station),
-                                  onPressed: () {
-                                    _reassignChoreOnClaim(
-                                        choreName,
-                                        choreId,
-                                        assignee,
-                                        deadline,
-                                        currUserModel!.email,
-                                        timelength);
-                                  },
-                                ),
-                              IconButton(
-                                icon: Icon(Icons.edit),
-                                onPressed: () {
-                                  _showEditChoreDialog(choreName, choreId, assignee,
-                                      deadline, timelength);
-                                },
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteChore(choreId);
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              child: Center(
+                child: Text(
+                  "Press the + to add a chore!",
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
               ),
             ),
-            FloatingActionButton(
+            Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
               onPressed: () {
                 assigneeController.clear();
                 titleController.clear();
                 _showAddTaskDialog(context);
               },
-              child: Icon(Icons.add),
-              backgroundColor: Colors.blue, // Customize as needed
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: theme.buttonColor, // Customize as needed
             ),
+          ),
           ],
         );
-      },
-    );
-  }
+      }
+      var chores = snapshot.data!.docs;
+      List<Widget> choreWidgets = [];
+      Color textColor = Colors.grey;
+
+      return Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.all(8),
+              itemCount: chores.length,
+              itemBuilder: (context, index) {
+                var choreData = chores[index].data() as Map<String, dynamic>;
+                var choreId = chores[index].id;
+                var choreName = choreData['choreName'];
+                var assignee = choreData['assignee'];
+                var isCompleted = choreData['isCompleted'];
+                var deadline = choreData['deadline'] != null
+                    ? (choreData['deadline'] as Timestamp).toDate()
+                    : null;
+                var timelength = choreData['timelength'];
+
+                if (deadline != null) {
+                  formattedDate =
+                      '${deadline.month.toString().padLeft(2, '0')}-${deadline.day.toString().padLeft(2, '0')}-${deadline.year.toString().substring(2)}';
+                }
+
+                if (assignee == currUserModel!.email) {
+                  assigneeMatchesCurrUser = true;
+                  textColor = Colors.blue;
+                } else {
+                  assigneeMatchesCurrUser = false;
+                  textColor = Colors.grey;
+                }
+
+                return Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListTile(
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    title: Row(
+                      children: [
+                        Checkbox(
+                          value: isCompleted,
+                          activeColor: theme.buttonColor,
+                          onChanged: (value) {
+                            FirebaseFirestore.instance
+                                .collection('households')
+                                .doc(currUserModel!.currHouse)
+                                .collection('chores')
+                                .doc(choreId)
+                                .update({'isCompleted': value});
+                          },
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$choreName',
+                                style: TextStyle(
+                                  decoration: isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: textColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18
+                                ),
+                              ),
+                              Text('Do: $assignee',
+                                style: TextStyle(
+                                  color: textColor,
+                                )),
+                              if (deadline != null)
+                                Text('Due: $formattedDate',
+                                    style: TextStyle(
+                                      color: textColor,
+                                    )),
+                              if (timelength != null)
+                                Text('Time: ${timelength}m',
+                                    style: TextStyle(
+                                      color: textColor,
+                                    ))
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            if (!assigneeMatchesCurrUser)
+                              IconButton(
+                                icon: const Icon(Icons.transfer_within_a_station),
+                                onPressed: () {
+                                  _reassignChoreOnClaim(
+                                      choreName,
+                                      choreId,
+                                      assignee,
+                                      deadline,
+                                      currUserModel!.email,
+                                      timelength);
+                                },
+                              ),
+                            IconButton(
+                              icon: Icon(Icons.edit),
+                              onPressed: () {
+                                _showEditChoreDialog(choreName, choreId, assignee,
+                                    deadline, timelength);
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () {
+                                _deleteChore(choreId);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
+            child: FloatingActionButton(
+              onPressed: () {
+                assigneeController.clear();
+                titleController.clear();
+                _showAddTaskDialog(context);
+              },
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: theme.buttonColor, // Customize as needed
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
 
   void _showEditChoreDialog(String choreName, String choreId, String assignee,
       DateTime? deadline, int timelength) {
@@ -473,7 +498,7 @@ class _ToDoListState extends State<ToDoList> {
                           items: _timelengths.map((int value) {
                             return DropdownMenuItem<int>(
                               value: value,
-                              child: Text(value.toString()),
+                              child: Text('$value min.'),
                             );
                           }).toList(),
                           hint: const Text('Select Time Estimate'),
@@ -635,7 +660,7 @@ class _ToDoListState extends State<ToDoList> {
                         items: _timelengths.map((int value) {
                           return DropdownMenuItem<int>(
                             value: value,
-                            child: Text(value.toString()),
+                            child: Text('$value min.'),
                           );
                         }).toList(),
                         hint: const Text('Select Time Estimate'),

@@ -125,10 +125,10 @@ class _ChoresPageState extends State<ChoresPage> {
     if (choreSnapshot.exists) {
     var choreData = choreSnapshot.data() as Map<String, dynamic>;
 
-    // Assigning chore fields to variables
+    // Assigning chore fields to variables ... may not need to repeat this
     String choreName = choreData['choreName'] ?? '';
     String? assignee = choreData['assignee'];
-    //int choreDuration = choreData['timelength'];
+    var choreDuration = choreData['timelength'];
     DateTime? deadline = choreData['deadline'] != null
         ? (choreData['deadline'] as Timestamp).toDate()
         : null;
@@ -139,11 +139,11 @@ class _ChoresPageState extends State<ChoresPage> {
     // You can use these variables as needed
 
     start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
-    end = DateTime(deadline.year, deadline.month, deadline.day, 18, 0);   // 6pm
+    end = start.add(Duration(minutes: choreDuration));   // 6pm
     DateTime day = DateTime(deadline.year, deadline.month, deadline.day, 0, 0); // midnight the day of the deadline
 
-    start = (await _checkForTimeConflicts(start, end, day )) as DateTime?;
-    end = start?.add(Duration(hours: 1));
+    start = (await _checkForTimeConflicts(start, end, day, choreDuration )) as DateTime?;
+    end = start?.add(Duration(minutes: choreDuration));
 
     if (start!= null) {
 
@@ -199,7 +199,7 @@ class _ChoresPageState extends State<ChoresPage> {
 
   }
 
-  Future<Object?> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd, DateTime day) async {
+  Future<Object?> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd, DateTime day, int choreDuration) async {
 
     QuerySnapshot snapshot = await FirebaseFirestore.instance
       .collection('households')
@@ -220,7 +220,7 @@ class _ChoresPageState extends State<ChoresPage> {
         (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
         (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart))){
 
-            choreStart = eventEnd.add(Duration(minutes: 15));
+            choreStart = eventEnd.add(Duration(minutes: 10));
             
 
             if ( choreStart.hour >= 21){
@@ -229,20 +229,20 @@ class _ChoresPageState extends State<ChoresPage> {
               choreStart = choreStart.subtract(Duration(hours: hourDifference));
 
               choreStart = choreStart.subtract(Duration(days: 1));
-              choreEnd = choreStart.add(Duration(hours: 1));
+              choreEnd = choreStart.add(Duration(minutes: choreDuration));
               day = day.subtract(Duration(days: 1));
 
 
               if(choreStart.isAfter(DateTime.now())){
-                return _checkForTimeConflicts(choreStart, choreEnd, day);
+                return _checkForTimeConflicts(choreStart, choreEnd, day, choreDuration);
               } else {
                 return null;
               }
 
               
             } else{
-              choreEnd = choreStart.add(Duration(hours: 1));
-              return _checkForTimeConflicts(choreStart, choreEnd, day);
+              choreEnd = choreStart.add(Duration(minutes: choreDuration));
+              return _checkForTimeConflicts(choreStart, choreEnd, day, choreDuration);
             }
             
       }
@@ -333,42 +333,45 @@ class _ChoresPageState extends State<ChoresPage> {
     );
   }
 
-Widget buildChoresPage() {
-  String formattedDate = "";
-  bool assigneeMatchesCurrUser = false;
-  return StreamBuilder<QuerySnapshot>(
-    stream: FirebaseFirestore.instance
-        .collection('households')
-        .doc(currUserModel!.currHouse)
-        .collection('chores')
-        .snapshots(),
-    builder: (context, snapshot) {
-      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-        return Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Text(
-                  "Press the + to add a chore!",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
+  Widget buildChoresPage() {
+    String formattedDate = "";
+    bool assigneeMatchesCurrUser = false;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('households')
+          .doc(currUserModel!.currHouse)
+          .collection('chores')
+          .orderBy('isCompleted', descending: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "Press the + to add a chore!",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-            padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
-            child: FloatingActionButton(
-              onPressed: () {
-                assigneeController.clear();
-                titleController.clear();
-                _showAddTaskDialog(context);
-              },
-              child: Icon(Icons.add, color: Colors.white),
-              backgroundColor: theme.buttonColor, // Customize as needed
+              Padding(
+                padding: const EdgeInsets.only(
+                    bottom: 20.0), // Adjust the padding as needed
+                child: FloatingActionButton(
+                  onPressed: () {
+                    assigneeController.clear();
+                    titleController.clear();
+                    _showAddTaskDialog(context);
+                  },
+                  child: Icon(Icons.add, color: Colors.white),
+                  backgroundColor: theme.buttonColor, // Customize as needed
             ),
           ),
           ],
         );
       }
+
       var chores = snapshot.data!.docs;
       List<Widget> choreWidgets = [];
       Color textColor = Colors.grey;
@@ -418,14 +421,14 @@ Widget buildChoresPage() {
                         Checkbox(
                           value: isCompleted,
                           activeColor: theme.buttonColor,
-                          onChanged: (value) {
+                          onChanged: assigneeMatchesCurrUser ? (value) {
                             FirebaseFirestore.instance
                                 .collection('households')
                                 .doc(currUserModel!.currHouse)
                                 .collection('chores')
                                 .doc(choreId)
                                 .update({'isCompleted': value});
-                          },
+                          } : null
                         ),
                         SizedBox(width: 8),
                         Expanded(
@@ -482,12 +485,13 @@ Widget buildChoresPage() {
                                       deadline, timelength);
                                 },
                               ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteChore(choreId);
-                                },
-                              ),
+                            if(!assigneeMatchesCurrUser)
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () {
+                                    _deleteChore(choreId);
+                                  },
+                                ),
                               Visibility(
                                 visible: !inCalendar && (deadline != null),
                                 child:
@@ -531,9 +535,11 @@ Widget buildChoresPage() {
           ),
         ],
       );
-    },
+  },
   );
-}
+    }
+  
+
 
 
 
@@ -542,6 +548,7 @@ Widget buildChoresPage() {
     String editedChoreName = choreName;
     String? editedAssignee = assignee;
     int? editedTimelength = timelength;
+    const customBlue = Color(0xFF3366FF);
 
     showDialog(
       context: context,
@@ -636,8 +643,9 @@ Widget buildChoresPage() {
                           ),
                         ),
                         Text(deadline != null
-                            ? '${deadline!.month.toString().padLeft(2, '0')}-${deadline!.day.toString().padLeft(2, '0')}-${deadline!.year.toString().substring(2)}'
-                            : ''),
+                            ? '${deadline!.month.toString().padLeft(2, '0')}/${deadline!.day.toString().padLeft(2, '0')}/${deadline!.year.toString().substring(2)}'
+                            : '',
+                            style: const TextStyle(color: customBlue)),
                       ],
                     ),
                     Column(
@@ -704,6 +712,8 @@ Widget buildChoresPage() {
   }
 
   void _showAddTaskDialog(BuildContext context) {
+    const customBlue = Color(0xFF3366FF);
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -788,18 +798,16 @@ Widget buildChoresPage() {
                             });
                           }
                         },
-                        child: Text(
-                          selectedDate != null
-                              ? 'Change Deadline'
-                              : 'Set Deadline...',
+                        child: const Text(
+                          'Set Deadline...',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
-                      if (selectedDate != null)
-                        Text(
-                          'Deadline: $selectedDate',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                      Text(
+                          selectedDate != null
+                              ? '${selectedDate!.month.toString().padLeft(2, '0')}/${selectedDate!.day.toString().padLeft(2, '0')}/${selectedDate!.year.toString().substring(2)}'
+                              : '',
+                          style: const TextStyle(color: customBlue)),
                     ],
                   ),
                   Column(

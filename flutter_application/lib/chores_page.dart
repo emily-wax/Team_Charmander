@@ -133,13 +133,11 @@ class _ChoresPageState extends State<ChoresPage> {
         ? (choreData['deadline'] as Timestamp).toDate()
         : null;
 
-    // TODO: correlate taken duration with correct time
-
     // Now you have choreName, assignee, deadline, and timelength as variables
     // You can use these variables as needed
 
     start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
-    end = start.add(Duration(minutes: choreDuration));   // 6pm
+    end = start.add(Duration(minutes: choreDuration));   
     DateTime day = DateTime(deadline.year, deadline.month, deadline.day, 0, 0); // midnight the day of the deadline
 
     start = (await _checkForTimeConflicts(start, end, day, choreDuration )) as DateTime?;
@@ -183,6 +181,8 @@ class _ChoresPageState extends State<ChoresPage> {
         ),
       );
     }
+
+
 
     //TODOOOOO
     //Check for unique name for event (see if event already has that name)
@@ -497,9 +497,25 @@ class _ChoresPageState extends State<ChoresPage> {
                                 child:
                                 IconButton(
                                 icon: Icon(Icons.calendar_month),
-                                onPressed: () {
+                                onPressed: () async {
                                   if(assignee == currUserModel!.email){
-                                    _addTocalendar(choreId);
+                                      QuerySnapshot snapshot = await FirebaseFirestore.instance
+                                      .collection('households')
+                                      .doc(currUserModel!.currHouse)
+                                      .collection('events')
+                                      .where('name', isEqualTo: choreName)
+                                      .get();
+
+                                    if( snapshot.docs.isNotEmpty){
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text('Try again with a unique event name.'),
+                                      ));
+                                    } else{
+                                      _addTocalendar(choreId);
+                                    }
+                                    
+
+
                                   } else if (deadline == null) {
                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                       content: Text('This event does not have a deadline and cannot be added to the calendar.'),

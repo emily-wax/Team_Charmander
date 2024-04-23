@@ -39,6 +39,7 @@ class _ChoresPageState extends State<ChoresPage> {
             'isCompleted': false,
             'deadline': deadline,
             'timelength': timelength,
+            'inCalendar': false,
           });
         });
       });
@@ -53,6 +54,7 @@ class _ChoresPageState extends State<ChoresPage> {
         'isCompleted': false,
         'deadline': deadline,
         'timelength': timelength,
+        'inCalendar': false,
       });
     }
     selectedUser = null;
@@ -62,7 +64,7 @@ class _ChoresPageState extends State<ChoresPage> {
   }
 
   void _updateChoreInFirestore(String choreId, String choreName,
-      String? assignee, Timestamp? deadline, int? timelength) async {
+      String? assignee, Timestamp? deadline, int? timelength) async { //delete calendar event upon updating
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
       AutoAssignClass auto = AutoAssignClass();
@@ -80,6 +82,7 @@ class _ChoresPageState extends State<ChoresPage> {
             'assignee': assignee,
             'deadline': deadline,
             'timelength': timelength,
+            'inCalendar': false,
           });
         });
       });
@@ -94,6 +97,7 @@ class _ChoresPageState extends State<ChoresPage> {
         'assignee': assignee,
         'deadline': deadline,
         'timelength': timelength,
+        'inCalendar': false,
       });
     }
     autoAssignChecked = false;
@@ -108,6 +112,145 @@ class _ChoresPageState extends State<ChoresPage> {
         .delete();
   }
 
+  void _addTocalendar(String choreId) async{                ///////////////here
+    DateTime? start;
+    DateTime? end;
+    DocumentSnapshot choreSnapshot = await FirebaseFirestore.instance   
+    .collection('households')
+    .doc(currUserModel!.currHouse)
+    .collection('chores')
+    .doc(choreId)
+    .get();
+
+    if (choreSnapshot.exists) {
+    var choreData = choreSnapshot.data() as Map<String, dynamic>;
+
+    // Assigning chore fields to variables ... may not need to repeat this
+    String choreName = choreData['choreName'] ?? '';
+    String? assignee = choreData['assignee'];
+    var choreDuration = choreData['timelength'];
+    DateTime? deadline = choreData['deadline'] != null
+        ? (choreData['deadline'] as Timestamp).toDate()
+        : null;
+
+    // Now you have choreName, assignee, deadline, and timelength as variables
+    // You can use these variables as needed
+
+    start = DateTime(deadline!.year, deadline.month, deadline.day, 17, 0); // 5pm
+    end = start.add(Duration(minutes: choreDuration));   
+    DateTime day = DateTime(deadline.year, deadline.month, deadline.day, 0, 0); // midnight the day of the deadline
+
+    start = (await _checkForTimeConflicts(start, end, day, choreDuration )) as DateTime?;
+    end = start?.add(Duration(minutes: choreDuration));
+
+    if (start!= null) {
+
+      final event = {
+        'name': choreName,
+        'start': start,
+        'end': end,
+        'user': assignee, // Placeholder for user name, replace with actual user name
+      };
+
+      FirebaseFirestore.instance
+        .collection('households')
+        .doc(currUserModel!.currHouse) // Use the household ID obtained from Firestore
+        .collection('events')
+        .add(event);
+
+      FirebaseFirestore.instance   
+      .collection('households')
+      .doc(currUserModel!.currHouse)
+      .collection('chores')
+      .doc(choreId)
+      .update({'inCalendar':true});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chore successfully added to calendar.'),
+        ),
+      );
+
+  
+    }
+
+    else{
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chore has too many time conflicts could not add to calendar.'),
+        ),
+      );
+    }
+
+
+
+    //TODOOOOO
+    //Check for unique name for event (see if event already has that name)
+    //adding user prefences 
+  
+    
+
+    
+
+    // Add your code to use these variables
+    // For example, adding to a calendar or any other processing
+    }
+        
+
+  }
+
+  Future<Object?> _checkForTimeConflicts(DateTime choreStart, DateTime choreEnd, DateTime day, int choreDuration) async {
+
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+      .collection('households')
+      .doc(currUserModel!.currHouse)
+      .collection('events')
+      .where('start', isGreaterThanOrEqualTo: day)  // Filter events starting from 'day'
+      .where('start', isLessThan: day.add(Duration(days: 1)))  // Filter events ending before the next day
+      .get();
+
+    List<Map<String, dynamic>> events = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+    for (var event in events){
+      DateTime eventStart = (event['start'] as Timestamp).toDate();
+      DateTime eventEnd = (event['end'] as Timestamp).toDate();
+
+      // Adjust the time if a conflict is found
+      if(eventStart == choreStart || eventEnd == choreEnd || 
+        (choreStart.isBefore(eventEnd) && choreEnd.isAfter(eventStart)) ||
+        (eventStart.isBefore(choreEnd) && eventEnd.isAfter(choreStart))){
+
+            choreStart = eventEnd.add(Duration(minutes: 10));
+            
+
+            if ( choreStart.hour >= 21){
+              // reset choreStart to 5pm the day before
+              int hourDifference = choreStart.hour - 17;
+              choreStart = choreStart.subtract(Duration(hours: hourDifference));
+
+              choreStart = choreStart.subtract(Duration(days: 1));
+              choreEnd = choreStart.add(Duration(minutes: choreDuration));
+              day = day.subtract(Duration(days: 1));
+
+
+              if(choreStart.isAfter(DateTime.now())){
+                return _checkForTimeConflicts(choreStart, choreEnd, day, choreDuration);
+              } else {
+                return null;
+              }
+
+              
+            } else{
+              choreEnd = choreStart.add(Duration(minutes: choreDuration));
+              return _checkForTimeConflicts(choreStart, choreEnd, day, choreDuration);
+            }
+            
+      }
+    }
+
+    return choreStart;
+  }
+
   void _reassignChoreOnClaim(String choreName, String choreId, String assignee,
       DateTime? deadline, String? newAssigneeUser, String timelength) {
     FirebaseFirestore.instance
@@ -120,6 +263,7 @@ class _ChoresPageState extends State<ChoresPage> {
       'assignee': newAssigneeUser,
       'deadline': deadline,
       'timelength': timelength,
+      'inCalendar': false,
     });
   }
 
@@ -232,22 +376,23 @@ class _ChoresPageState extends State<ChoresPage> {
       List<Widget> choreWidgets = [];
       Color textColor = Colors.grey;
 
-      return Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(8),
-              itemCount: chores.length,
-              itemBuilder: (context, index) {
-                var choreData = chores[index].data() as Map<String, dynamic>;
-                var choreId = chores[index].id;
-                var choreName = choreData['choreName'];
-                var assignee = choreData['assignee'];
-                var isCompleted = choreData['isCompleted'];
-                var deadline = choreData['deadline'] != null
-                    ? (choreData['deadline'] as Timestamp).toDate()
-                    : null;
-                var timelength = choreData['timelength'];
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(8),
+                itemCount: chores.length,
+                itemBuilder: (context, index) {
+                  var choreData = chores[index].data() as Map<String, dynamic>;
+                  var choreId = chores[index].id;
+                  var choreName = choreData['choreName'];
+                  var assignee = choreData['assignee'];
+                  var isCompleted = choreData['isCompleted'];
+                  var deadline = choreData['deadline'] != null
+                      ? (choreData['deadline'] as Timestamp).toDate()
+                      : null;
+                  var timelength = choreData['timelength'];
+                  var inCalendar = choreData['inCalendar'];
 
                 if (deadline != null) {
                   formattedDate =
@@ -315,48 +460,84 @@ class _ChoresPageState extends State<ChoresPage> {
                                     style: TextStyle(
                                       color: textColor,
                                     ))
+                              ],
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              if (!assigneeMatchesCurrUser)
+                                IconButton(
+                                  icon: const Icon(Icons.transfer_within_a_station),
+                                  onPressed: () {
+                                    _reassignChoreOnClaim(
+                                        choreName,
+                                        choreId,
+                                        assignee,
+                                        deadline,
+                                        currUserModel!.email,
+                                        timelength);
+                                  },
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.edit),
+                                onPressed: () {
+                                  _showEditChoreDialog(choreName, choreId, assignee,    /////////////here
+                                      deadline, timelength);
+                                },
+                              ),
+                            if(!assigneeMatchesCurrUser)
+                                IconButton(
+                                  icon: Icon(Icons.delete),
+                                  onPressed: () {
+                                    _deleteChore(choreId);
+                                  },
+                                ),
+                              Visibility(
+                                visible: !inCalendar && (deadline != null),
+                                child:
+                                IconButton(
+                                icon: Icon(Icons.calendar_month),
+                                onPressed: () async {
+                                  if(assignee == currUserModel!.email){
+                                      QuerySnapshot snapshot = await FirebaseFirestore.instance
+                                      .collection('households')
+                                      .doc(currUserModel!.currHouse)
+                                      .collection('events')
+                                      .where('name', isEqualTo: choreName)
+                                      .get();
+
+                                    if( snapshot.docs.isNotEmpty){
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text('Try again with a unique event name.'),
+                                      ));
+                                    } else{
+                                      _addTocalendar(choreId);
+                                    }
+                                    
+
+
+                                  } else if (deadline == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text('This event does not have a deadline and cannot be added to the calendar.'),
+                                    ));
+                                  }else{
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Text('This event is not assigned to you.'),
+                                    ));
+                                  }
+                                },
+                              ),
+                              )
                             ],
                           ),
-                        ),
-                        Row(
-                          children: [
-                            if (!assigneeMatchesCurrUser)
-                              IconButton(
-                                icon: const Icon(Icons.transfer_within_a_station),
-                                onPressed: () {
-                                  _reassignChoreOnClaim(
-                                      choreName,
-                                      choreId,
-                                      assignee,
-                                      deadline,
-                                      currUserModel!.email,
-                                      timelength);
-                                },
-                              ),
-                            IconButton(
-                              icon: Icon(Icons.edit),
-                              onPressed: () {
-                                _showEditChoreDialog(choreName, choreId, assignee,
-                                    deadline, timelength);
-                              },
-                            ),
-                            if(!assigneeMatchesCurrUser)
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () {
-                                  _deleteChore(choreId);
-                                },
-                              ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-          Padding(
+            Padding(
             padding: const EdgeInsets.only(bottom: 20.0), // Adjust the padding as needed
             child: FloatingActionButton(
               onPressed: () {

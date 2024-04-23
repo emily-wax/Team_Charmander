@@ -276,14 +276,14 @@ class _ChoresPageState extends State<ChoresPage> {
                         Checkbox(
                           value: isCompleted,
                           activeColor: theme.buttonColor,
-                          onChanged: (value) {
+                          onChanged: assigneeMatchesCurrUser ? (value) {
                             FirebaseFirestore.instance
                                 .collection('households')
                                 .doc(currUserModel!.currHouse)
                                 .collection('chores')
                                 .doc(choreId)
                                 .update({'isCompleted': value});
-                          },
+                          } : null
                         ),
                         SizedBox(width: 8),
                         Expanded(
@@ -340,12 +340,13 @@ class _ChoresPageState extends State<ChoresPage> {
                                     deadline, timelength);
                               },
                             ),
-                            IconButton(
-                              icon: Icon(Icons.delete),
-                              onPressed: () {
-                                _deleteChore(choreId);
-                              },
-                            ),
+                            if(!assigneeMatchesCurrUser)
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () {
+                                  _deleteChore(choreId);
+                                },
+                              ),
                           ],
                         ),
                       ],

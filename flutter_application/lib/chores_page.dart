@@ -197,6 +197,7 @@ class _ToDoListState extends State<ToDoList> {
           .collection('households')
           .doc(currUserModel!.currHouse)
           .collection('chores')
+          .orderBy('isCompleted', descending: false)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {

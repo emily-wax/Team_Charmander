@@ -463,7 +463,7 @@ class _ChoresPageState extends State<ChoresPage> {
                               ],
                             ),
                           ),
-                          Row(
+                          Column(
                             children: [
                               if (!assigneeMatchesCurrUser)
                                 IconButton(

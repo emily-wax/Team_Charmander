@@ -39,6 +39,7 @@ class _SignInPageState extends State<SignInPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Image.asset('assets/logo.png', width:50, height:50),
               Text(
                 isSignUp ? 'Welcome to RoomiePal!' : 'Sign In to Your Account',
                 style: const TextStyle(

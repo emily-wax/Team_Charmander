@@ -6,9 +6,14 @@ import 'package:flutter_application/theme_provider.dart';
 import 'user_model.dart';
 // import 'global_variables.dart';
 
-ThemeProvider theme = ThemeProvider();
+
 
 class PreferenceSlider extends StatefulWidget {
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  const PreferenceSlider({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
+
   @override
   _PreferenceSliderState createState() => _PreferenceSliderState();
 }
@@ -21,26 +26,42 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
   double _morningValue = 0.5;
   double _eveningValue = 0.5;
   bool _darkMode = false;
-  Future<UserModel> currUserModel = readData();
+  UserModel? currUserModel;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  ThemeProvider? theme;
 
   // Define the _savePreferences method here
   @override
   void initState() {
     super.initState();
     // Fetch values from Firestore when the dialog is initialized
+    _setUpTheme();
     fetchDataFromFirestore();
+    _fetchUserModel();
+  }
+
+  void _setUpTheme() {
+    theme = ThemeProvider(widget.firestoreInstance, widget.userEmail);
+  }
+
+  void _fetchUserModel() async {
+    try {
+      currUserModel = await readData( widget.userEmail, widget.firestoreInstance );
+      setState(() {}); // Trigger a rebuild after getting the user model
+    } catch (error) {
+      // Handle error here, such as displaying an error message or retrying
+      print('Error fetching user data: $error');
+    }
   }
 
   // Method to fetch data from Firestore
   void fetchDataFromFirestore() async {
-    UserModel currUserModel = await readData();
+    UserModel currUserModel = await readData( widget.userEmail, widget.firestoreInstance );
 
     // Fetch values from Firestore and update state variables accordingly
     // Example:
     try {
-      await _firestore
+      await widget.firestoreInstance
         .collection('users')
         .doc(currUserModel.id)
         .get()
@@ -69,9 +90,9 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
 
   // potentially need to do update() instead of set()
   void _savePreferences() async {
-    UserModel currUserModel = await readData();
+    UserModel currUserModel = await readData( widget.userEmail, widget.firestoreInstance);
     try {
-      await _firestore.collection('users').doc(currUserModel.id).set({
+      await widget.firestoreInstance.collection('users').doc(currUserModel.id).set({
         'slider-prefs': {
           'cleaner': _cleanerValue,
           'organizer': _organizerValue,
@@ -100,7 +121,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         Slider(
         
         value: _cleanerValue,
-        activeColor: theme.buttonColor,
+        activeColor: theme?.buttonColor,
         onChanged: (newValue) {
           setState(() {
             _cleanerValue = newValue; // Update the value here
@@ -115,7 +136,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I like to organize"),
         Slider(
         value: _organizerValue,
-        activeColor: theme.buttonColor,
+        activeColor: theme?.buttonColor,
         onChanged: (newValue) {
           setState(() {
             _organizerValue = newValue; // Update the value here
@@ -130,7 +151,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I like to maintain household items"),
         Slider(
           value: _maintainValue,
-          activeColor: theme.buttonColor,
+          activeColor: theme?.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _maintainValue = newValue; // Update the value here
@@ -145,7 +166,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I don't mind outdoor chores"),
         Slider(
           value: _outdoorValue,
-          activeColor: theme.buttonColor,
+          activeColor: theme?.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _outdoorValue = newValue; // Update the value here
@@ -160,7 +181,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I want to do chores in the morning"),
         Slider(
           value: _morningValue,
-          activeColor: theme.buttonColor,
+          activeColor: theme?.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _morningValue = newValue; // Update the value here
@@ -175,7 +196,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text("I want to do chores in the evening"),
         Slider(
           value: _eveningValue,
-          activeColor: theme.buttonColor,
+          activeColor: theme?.buttonColor,
           onChanged: (newValue) {
             setState(() {
               _eveningValue = newValue; // Update the value here
@@ -192,7 +213,7 @@ class _PreferenceSliderState extends State<PreferenceSlider> {
         const Text('Dark Mode: '),
         Switch(
           value: _darkMode,
-          activeColor: theme.buttonColor,
+          activeColor: theme?.buttonColor,
           onChanged: (value) {
             setState(() {
               _darkMode = value;

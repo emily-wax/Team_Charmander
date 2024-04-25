@@ -9,10 +9,12 @@ import 'HomePage.dart';
 import "theme_provider.dart";
 import 'package:provider/provider.dart';
 
-ThemeProvider theme = ThemeProvider();
-
 class CalendarPage extends StatefulWidget {
-  const CalendarPage({Key? key}) : super(key: key);
+
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  const CalendarPage({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
 
   @override
   _CalendarPageState createState() => _CalendarPageState();
@@ -22,6 +24,8 @@ class _CalendarPageState extends State<CalendarPage> {
   late CalendarView _calendarView;
   final CalendarController _calendarController = CalendarController();
   final TextEditingController _eventNameController = TextEditingController();
+
+  ThemeProvider? theme;
 
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
@@ -40,9 +44,13 @@ class _CalendarPageState extends State<CalendarPage> {
     _fetchUserModel();
   }
 
+  void _setUpTheme() {
+    theme = ThemeProvider(widget.firestoreInstance, widget.userEmail);
+  }
+
   void _fetchUserModel() async {
     try {
-      currUserModel = await readData();
+      currUserModel = await readData( widget.userEmail, widget.firestoreInstance );
       setState(() {}); // Trigger a rebuild after getting the user model
     } catch (error) {
       // Handle error here, such as displaying an error message or retrying
@@ -165,15 +173,15 @@ void _handleAppointmentTap(Appointment appointment) {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              cursorColor: theme.buttonColor,
-              style: TextStyle(color: theme.textColor),
+              cursorColor: theme?.buttonColor,
+              style: TextStyle(color: theme?.textColor),
               initialValue: eventName,
               onChanged: (value) => eventName = value,
               decoration: InputDecoration(
                 labelText: 'Event Name',
-                labelStyle: TextStyle(color: theme.buttonColor),
+                labelStyle: TextStyle(color: theme?.buttonColor),
                 focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                      borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                     ),
                 ),
             ),
@@ -189,7 +197,7 @@ void _handleAppointmentTap(Appointment appointment) {
                       children: [
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.buttonColor
+                            backgroundColor: theme!.buttonColor
                           ),
                           onPressed: () async {
                             final selectedDate = await showDatePicker(
@@ -211,7 +219,7 @@ void _handleAppointmentTap(Appointment appointment) {
                               }
                             }
                           },
-                          child: Text('Start', style: TextStyle(color: theme.textColor),),
+                          child: Text('Start', style: TextStyle(color: theme!.textColor),),
                         ),
                       ],
                     ),
@@ -220,7 +228,7 @@ void _handleAppointmentTap(Appointment appointment) {
                       children: [
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.buttonColor
+                            backgroundColor: theme!.buttonColor
                           ),
                           onPressed: () async {
                             final selectedDate = await showDatePicker(
@@ -243,7 +251,7 @@ void _handleAppointmentTap(Appointment appointment) {
                               }
                             }
                           },
-                          child: Text('End', style: TextStyle(color: theme.textColor),),
+                          child: Text('End', style: TextStyle(color: theme!.textColor),),
                         ),
                       ],
                     ),
@@ -254,20 +262,20 @@ void _handleAppointmentTap(Appointment appointment) {
         actions: <Widget>[
           TextButton(
             style: TextButton.styleFrom(
-              backgroundColor: theme.buttonColor
+              backgroundColor: theme!.buttonColor
             ),
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel', style: TextStyle(color: theme.textColor),),
+            child: Text('Cancel', style: TextStyle(color: theme!.textColor),),
           ),
          ElevatedButton(
   style: ElevatedButton.styleFrom(
-    backgroundColor: theme.buttonColor,
+    backgroundColor: theme!.buttonColor,
   ),
   onPressed: () async {
     // Perform update logic here
-    UserModel? currentUserModel = await readData();
+    UserModel? currentUserModel = await readData( widget.userEmail, widget.firestoreInstance );
     if (eventName.isNotEmpty) {
       final updatedEvent = {
         'name': eventName,
@@ -310,17 +318,17 @@ void _handleAppointmentTap(Appointment appointment) {
       );
     }
   },
-  child: Text('Update', style: TextStyle(color: theme.textColor)),
+  child: Text('Update', style: TextStyle(color: theme?.textColor)),
 ),
 
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.buttonColor
+                            backgroundColor: theme?.buttonColor
                           ),
             onPressed: () async {
               _showDeleteConfirmationDialog(appointment);
             },
-            child: Text('Delete', style: TextStyle(color: theme.textColor)),
+            child: Text('Delete', style: TextStyle(color: theme?.textColor)),
           ),
         ],
       );
@@ -349,16 +357,16 @@ void _handleAppointmentTap(Appointment appointment) {
           actions: <Widget>[
             TextButton(
               style: TextButton.styleFrom(
-              backgroundColor: theme.buttonColor
+              backgroundColor: theme?.buttonColor
             ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+              child: Text('Cancel', style: TextStyle(color: theme?.textColor)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-              backgroundColor: theme.buttonColor
+              backgroundColor: theme?.buttonColor
             ),
               onPressed: () async {
                 // Delete the event from Firestore
@@ -396,7 +404,7 @@ void _handleAppointmentTap(Appointment appointment) {
 
                 Navigator.of(context).pop();
               },
-              child: Text('Delete', style: TextStyle(color: theme.textColor)),
+              child: Text('Delete', style: TextStyle(color: theme?.textColor)),
             ),
           ],
         );
@@ -421,13 +429,13 @@ void _handleAppointmentTap(Appointment appointment) {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              cursorColor: theme.buttonColor,
+              cursorColor: theme?.buttonColor,
               controller: _eventNameController,
               decoration: InputDecoration(
                 labelText: 'Event Name',
-                labelStyle: TextStyle(color: theme.buttonColor),
+                labelStyle: TextStyle(color: theme?.buttonColor),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                 ),
               ),
               onChanged: (value) => eventName = value,
@@ -441,7 +449,7 @@ void _handleAppointmentTap(Appointment appointment) {
                   children: [
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.buttonColor,
+                        backgroundColor: theme!.buttonColor,
                       ),
                       onPressed: () async {
                         final selectedDate = await showDatePicker(
@@ -465,7 +473,7 @@ void _handleAppointmentTap(Appointment appointment) {
                       },
                       child: Text(
                         'Start',
-                        style: TextStyle(color: theme.textColor),
+                        style: TextStyle(color: theme!.textColor),
                       ),
                     ),
                   ],
@@ -475,7 +483,7 @@ void _handleAppointmentTap(Appointment appointment) {
                   children: [
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.buttonColor,
+                        backgroundColor: theme!.buttonColor,
                       ),
                       onPressed: () async {
                         final selectedDate = await showDatePicker(
@@ -499,7 +507,7 @@ void _handleAppointmentTap(Appointment appointment) {
                       },
                       child: Text(
                         'End',
-                        style: TextStyle(color: theme.textColor),
+                        style: TextStyle(color: theme!.textColor),
                       ),
                     ),
                   ],
@@ -516,7 +524,7 @@ void _handleAppointmentTap(Appointment appointment) {
           // Cancel button...
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.buttonColor,
+              backgroundColor: theme!.buttonColor,
             ),
             onPressed: () {
               _eventNameController.clear();
@@ -524,12 +532,12 @@ void _handleAppointmentTap(Appointment appointment) {
             },
             child: Text(
               'Cancel',
-              style: TextStyle(color: theme.textColor),
+              style: TextStyle(color: theme!.textColor),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: theme.buttonColor,
+              backgroundColor: theme!.buttonColor,
             ),
             onPressed: () async {
               // check if name is unique
@@ -549,7 +557,7 @@ void _handleAppointmentTap(Appointment appointment) {
                   selectedStartTime != null &&
                   selectedEndDate != null &&
                   selectedStartDate != null) {
-                UserModel currUserModel = await readData();
+                UserModel currUserModel = await readData( widget.userEmail ,widget.firestoreInstance);
                 final event = {
                   'name': eventName,
                   'start': DateTime(
@@ -610,7 +618,7 @@ void _handleAppointmentTap(Appointment appointment) {
             },
             child: Text(
               'Add',
-              style: TextStyle(color: theme.textColor),
+              style: TextStyle(color: theme?.textColor),
             ),
           ),
         ],

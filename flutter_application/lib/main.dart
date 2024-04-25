@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_application/account_page.dart';
@@ -7,6 +8,7 @@ import 'HomePage.dart';
 import 'SignInPage.dart';
 import 'calendar_page.dart'; // Import the CalendarPage
 import 'theme_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final FirebaseOptions firebaseOptions = FirebaseOptions(
   apiKey: "AIzaSyC_5CMA0uX6Dw8PLvlJs4Y8hzFU1bayZtg",
@@ -20,6 +22,7 @@ final FirebaseOptions firebaseOptions = FirebaseOptions(
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(options: firebaseOptions);
 
   // Create an instance of AuthService to check if the user is signed in
@@ -34,6 +37,7 @@ Future main() async {
 
 class MyApp extends StatelessWidget {
   final bool isUserSignedIn;
+  // String? userEmail = FirebaseAuth.instance.currentUser!.email;
 
   MyApp(bool bool, {required this.isUserSignedIn});
 
@@ -41,7 +45,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(FirebaseFirestore.instance , '' )),
         Provider.value(value: isUserSignedIn),
       ],
       child: Consumer2<ThemeProvider, bool>(

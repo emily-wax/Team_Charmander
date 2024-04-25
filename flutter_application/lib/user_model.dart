@@ -34,14 +34,14 @@ class UserModel{
 }
 
   // displays current user data
-  Future<UserModel> readData() async {
-    final db = FirebaseFirestore.instance;
-    final FirebaseAuth auth = FirebaseAuth.instance;
-    final User? user = auth.currentUser;
+  Future<UserModel> readData(String userEmail, FirebaseFirestore db ) async {
+    // final db = FirebaseFirestore.instance;
+    // final FirebaseAuth auth = FirebaseAuth.instance;
+    // final User? user = auth.currentUser;
 
-    String? currEmail = user!.email;
+    // String? currEmail = user!.email;
 
-    final snapshot = await db.collection("users").where("email", isEqualTo: currEmail).get();
+    final snapshot = await db.collection("users").where("email", isEqualTo: userEmail).get();
 
     final userData = snapshot.docs.map((e) => UserModel.fromSnapshot(e)).single;
     

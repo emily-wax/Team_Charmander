@@ -7,10 +7,12 @@ import 'auto_assign_chores.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
-ThemeProvider theme = ThemeProvider();
-
 class ChoresPage extends StatefulWidget {
-  const ChoresPage({Key? key}) : super(key: key);
+
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  const ChoresPage({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
 
   @override
   _ChoresPageState createState() => _ChoresPageState();
@@ -20,12 +22,17 @@ class _ChoresPageState extends State<ChoresPage> {
   TextEditingController titleController = TextEditingController();
   TextEditingController assigneeController = TextEditingController();
   UserModel? currUserModel;
+  ThemeProvider? theme;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  void _setUpTheme() {
+    theme = ThemeProvider(widget.firestoreInstance, widget.userEmail);
+  }
 
   void _addChoreToFirestoreDrop(String choreName, String? assignee,
       Timestamp? deadline, int? timelength) {
     if (autoAssignChecked) {
-      AutoAssignClass auto = AutoAssignClass();
+      AutoAssignClass auto = AutoAssignClass(firestoreInstance: widget.firestoreInstance, userEmail: widget.userEmail);
       auto.autoAssignChore(choreName).then((String result) {
         setState(() {
           assignee = result;
@@ -67,7 +74,7 @@ class _ChoresPageState extends State<ChoresPage> {
       String? assignee, Timestamp? deadline, int? timelength) async { //delete calendar event upon updating
     if (autoAssignChecked) {
       debugPrint("Auto Assign checked!");
-      AutoAssignClass auto = AutoAssignClass();
+      AutoAssignClass auto = AutoAssignClass(firestoreInstance: widget.firestoreInstance, userEmail: widget.userEmail);
       auto.autoAssignChore(choreName).then((String result) {
         setState(() {
           assignee = result;
@@ -271,6 +278,7 @@ class _ChoresPageState extends State<ChoresPage> {
   void initState() {
     super.initState();
     _loadRoommates();
+    _setUpTheme();
   }
 
   Future<void> _loadRoommates() async {
@@ -312,7 +320,7 @@ class _ChoresPageState extends State<ChoresPage> {
         title: const Text('Chores'),
       ),
       body: FutureBuilder<UserModel>(
-        future: readData(),
+        future: readData( widget.userEmail, widget.firestoreInstance ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -365,7 +373,7 @@ class _ChoresPageState extends State<ChoresPage> {
                     _showAddTaskDialog(context);
                   },
                   child: Icon(Icons.add, color: Colors.white),
-                  backgroundColor: theme.buttonColor, // Customize as needed
+                  backgroundColor: theme?.buttonColor, // Customize as needed
             ),
           ),
           ],
@@ -420,7 +428,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       children: [
                         Checkbox(
                           value: isCompleted,
-                          activeColor: theme.buttonColor,
+                          activeColor: theme?.buttonColor,
                           onChanged: assigneeMatchesCurrUser ? (value) {
                             FirebaseFirestore.instance
                                 .collection('households')
@@ -546,7 +554,7 @@ class _ChoresPageState extends State<ChoresPage> {
                 _showAddTaskDialog(context);
               },
               child: Icon(Icons.add, color: Colors.white),
-              backgroundColor: theme.buttonColor, // Customize as needed
+              backgroundColor: theme?.buttonColor, // Customize as needed
             ),
           ),
         ],
@@ -578,16 +586,16 @@ class _ChoresPageState extends State<ChoresPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextFormField(
-                      cursorColor: theme.buttonColor,
+                      cursorColor: theme?.buttonColor,
                       initialValue: choreName,
                       decoration: InputDecoration(
                         labelText: 'Task Name',
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: theme.buttonColor),
+                          borderSide: BorderSide(color: theme!.buttonColor),
 
                           // Border color when enabled
                         ),
-                        floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                        floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                       ),
                       onChanged: (value) {
                         editedChoreName = value;
@@ -597,7 +605,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       decoration: InputDecoration(
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                              color: theme
+                              color: theme!
                                   .buttonColor), // Border color when enabled
                         ),
                       ),
@@ -619,7 +627,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       children: [
                         Checkbox(
                             value: autoAssignChecked,
-                            activeColor: theme.buttonColor,
+                            activeColor: theme?.buttonColor,
                             onChanged: (bool? value) {
                               setState(() {
                                 autoAssignChecked = value!;
@@ -638,7 +646,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       children: [
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.buttonColor),
+                              backgroundColor: theme?.buttonColor),
                           onPressed: () async {
                             DateTime? pickedDate = await showDatePicker(
                               context: context,
@@ -689,7 +697,7 @@ class _ChoresPageState extends State<ChoresPage> {
               actions: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.buttonColor),
+                      backgroundColor: theme?.buttonColor),
                   onPressed: () {
                     Timestamp? deadlineReal = deadline != null
                         ? Timestamp.fromDate(deadline!)
@@ -712,7 +720,7 @@ class _ChoresPageState extends State<ChoresPage> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.buttonColor),
+                      backgroundColor: theme?.buttonColor),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -740,15 +748,15 @@ class _ChoresPageState extends State<ChoresPage> {
               return Column(
                 children: [
                   TextField(
-                    cursorColor: theme.buttonColor,
+                    cursorColor: theme?.buttonColor,
                     decoration: InputDecoration(
                       hintText: 'Enter task title',
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
                             color:
-                                theme.buttonColor), // Border color when enabled
+                                theme!.buttonColor), // Border color when enabled
                       ),
-                      floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                      floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                     ),
                     controller: titleController,
                   ),
@@ -757,7 +765,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       focusedBorder: OutlineInputBorder(
                         borderSide: BorderSide(
                             color:
-                                theme.buttonColor), // Border color when enabled
+                                theme!.buttonColor), // Border color when enabled
                       ),
                     ),
                     value: selectedUser,
@@ -773,12 +781,12 @@ class _ChoresPageState extends State<ChoresPage> {
                       );
                     }).toList(),
                     hint: Text('Select Assignee',
-                        style: TextStyle(color: theme.inputColor)),
+                        style: TextStyle(color: theme!.inputColor)),
                   ),
                   Row(
                     children: [
                       Checkbox(
-                        activeColor: theme.buttonColor,
+                        activeColor: theme!.buttonColor,
                         value: autoAssignChecked,
                         onChanged: (bool? value) {
                           setState(() => autoAssignChecked = value!);
@@ -798,7 +806,7 @@ class _ChoresPageState extends State<ChoresPage> {
                       
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.buttonColor),
+                            backgroundColor: theme!.buttonColor),
                         onPressed: () async {
                           DateTime? pickedDate = await showDatePicker(
                             context: context,
@@ -851,7 +859,7 @@ class _ChoresPageState extends State<ChoresPage> {
           ),
           actions: [
             TextButton(
-              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+              style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -859,7 +867,7 @@ class _ChoresPageState extends State<ChoresPage> {
                   const Text('Cancel', style: TextStyle(color: Colors.white)),
             ),
             TextButton(
-              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+              style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
               onPressed: () {
                 String choreName = titleController.text.trim();
                 Timestamp? deadline = selectedDate != null

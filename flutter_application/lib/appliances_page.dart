@@ -4,18 +4,46 @@ import 'user_model.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
-ThemeProvider theme = ThemeProvider();
+
 
 class AppliancesPage extends StatefulWidget {
-  const AppliancesPage({Key? key}) : super(key: key);
+
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  const AppliancesPage({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
 
   @override
-  _AppliancesPageState createState() => _AppliancesPageState();
+  AppliancesPageState createState() => AppliancesPageState();
 }
 
-class _AppliancesPageState extends State<AppliancesPage> {
+class AppliancesPageState extends State<AppliancesPage> {
   final TextEditingController _applianceNameController = TextEditingController();
   UserModel? currUserModel;
+
+  ThemeProvider? theme;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch values from Firestore when the dialog is initialized
+    _setUpTheme();
+    _fetchUserModel();
+  }
+
+  void _setUpTheme() {
+    theme = ThemeProvider(widget.firestoreInstance, widget.userEmail);
+  }
+
+  void _fetchUserModel() async {
+    try {
+      currUserModel = await readData( widget.userEmail, widget.firestoreInstance );
+      setState(() {}); // Trigger a rebuild after getting the user model
+    } catch (error) {
+      // Handle error here, such as displaying an error message or retrying
+      print('Error fetching user data: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +52,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
         title: Text('Appliances'),
       ),
       body: FutureBuilder<UserModel>(
-        future: readData(), // Use getCurrentUser() as the future
+        future: readData( widget.userEmail, widget.firestoreInstance ), 
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
@@ -52,7 +80,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
       children: [
         Expanded(
           child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
+            stream: widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return Center(
@@ -162,30 +190,30 @@ class _AppliancesPageState extends State<AppliancesPage> {
           title: Text('Add Appliance'),
           content: TextField(
             maxLength: 15,
-            cursorColor: theme.buttonColor,
+            cursorColor: theme?.buttonColor,
             controller: _applianceNameController,
             decoration: InputDecoration(
               hintText: 'Enter appliance name',
               focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                    borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                   ),
             ),
           ),
           actions: <Widget>[
             TextButton(
-              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+              style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+              child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
             ),
             TextButton(
-              style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+              style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
               onPressed: () {
-                _addAppliance(_applianceNameController.text);
+                addAppliance(_applianceNameController.text, widget.firestoreInstance, currUserModel!.currHouse!);
                 Navigator.of(context).pop();
               },
-              child: Text('Add', style: TextStyle(color: theme.textColor)),
+              child: Text('Add', style: TextStyle(color: theme!.textColor)),
             ),
           ],
         );
@@ -202,19 +230,19 @@ class _AppliancesPageState extends State<AppliancesPage> {
         content: Text('Are you sure you want to delete this appliance?'),
         actions: <Widget>[
           TextButton(
-            style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+            style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+            child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
           ),
           TextButton(
-            style: TextButton.styleFrom(backgroundColor: theme.buttonColor),
+            style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
             onPressed: () {
-              _deleteAppliance(applianceId);
+              deleteAppliance(widget.firestoreInstance ,applianceId, currUserModel!.currHouse!);
               Navigator.of(context).pop();
             },
-            child: Text('Delete', style: TextStyle(color: theme.textColor)),
+            child: Text('Delete', style: TextStyle(color: theme!.textColor)),
           ),
         ],
       );
@@ -235,7 +263,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
     }
 
     // Get the appliance document from Firestore
-    DocumentSnapshot applianceSnapshot = await FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).get();
+    DocumentSnapshot applianceSnapshot = await widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).get();
 
     // Get the current claim status and claimed by user ID
     bool isClaimed = applianceSnapshot['claimed'];
@@ -249,7 +277,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
     }
 
     // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
-    await FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
+    await widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
       'claimed': true,
       'claimedBy': userId, // Use the current user's ID
       'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
@@ -258,18 +286,17 @@ class _AppliancesPageState extends State<AppliancesPage> {
 
   void _unclaimAppliance(String applianceId) {
     // Clear the claimedBy field when unclaim
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
+    widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Clear claimedAt
     });
   }
 
-  // TODO: make sure user is in a household
-  void _addAppliance(String applianceName) async {
+  Future<void> addAppliance(String applianceName, FirebaseFirestore db, String userHouse) async {
     // Add a new appliance to Firestore
 
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceName).set({
+    db.collection('households').doc(userHouse).collection('appliances').doc(applianceName).set({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Initialize claimedAt as null
@@ -298,7 +325,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
             ),
             TextButton(
               onPressed: () {
-                _deleteAppliance(applianceId);
+                deleteAppliance(widget.firestoreInstance ,applianceId, currUserModel!.currHouse!);
                 Navigator.of(context).pop();
               },
               child: Text('Yes'),
@@ -309,10 +336,9 @@ class _AppliancesPageState extends State<AppliancesPage> {
     );
   }
 
-  // TODO: change reference to subcollection
-  void _deleteAppliance(String applianceId) {
+  Future<void> deleteAppliance( FirebaseFirestore db, String applianceId, String userHouse) async {
     // Delete the appliance document from Firestore
-    FirebaseFirestore.instance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).delete().then((_) {
+    db.collection('households').doc(userHouse).collection('appliances').doc(applianceId).delete().then((_) {
       print('Appliance deleted successfully');
     }).catchError((error) {
       // Handle any errors that occur during deleting the appliance

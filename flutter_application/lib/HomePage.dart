@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application/SignInPage.dart';
 import 'package:flutter_application/user_model.dart';
@@ -23,6 +25,8 @@ class _HomePageState extends State<HomePage> {
   late PageController _pageController;
   int _selectedIndex = 0;
   UserModel? currUserModel;
+  String? userEmail = FirebaseAuth.instance.currentUser!.email;
+  FirebaseFirestore firestoreInstance = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -33,7 +37,7 @@ class _HomePageState extends State<HomePage> {
 
   void _fetchUserModel() async {
     try {
-      currUserModel = await readData();
+      currUserModel = await readData( userEmail!, firestoreInstance );
       setState(() {}); // Trigger a rebuild after getting the user model
     } catch (error) {
       // Handle error here, such as displaying an error message or retrying
@@ -68,11 +72,10 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
-          AccountPage(),
-          const ChoresPage(),
-          const AppliancesPage(),
-          const CalendarPage(),
-          
+          AccountPage( firestoreInstance: firestoreInstance, userEmail: userEmail!),
+          ChoresPage(firestoreInstance: firestoreInstance, userEmail: userEmail!),
+          AppliancesPage(firestoreInstance: firestoreInstance, userEmail: userEmail!),
+          CalendarPage(firestoreInstance: firestoreInstance, userEmail: userEmail!),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

@@ -9,9 +9,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';
 
-ThemeProvider theme = ThemeProvider();
 
 class AccountPage extends StatefulWidget {
+
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  const AccountPage({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
+
+  @override
   @override
   _AccountPageState createState() => _AccountPageState();
 }
@@ -20,6 +26,7 @@ class _AccountPageState extends State<AccountPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? currUser;
   HouseholdModel? _household;
+  ThemeProvider? theme;
   final _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _countController = TextEditingController();
@@ -34,10 +41,13 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     currUser = _auth.currentUser;
+    _setUpTheme();
     _fetchHouseholdsForCurrentUser();
   }
 
-
+  void _setUpTheme() {
+    theme = ThemeProvider(widget.firestoreInstance, widget.userEmail);
+  }
 
   void _logout(BuildContext context) async {
   try {
@@ -268,14 +278,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             TextFormField(
-              style: TextStyle(color: theme.inputColor),
+              style: TextStyle(color: theme!.inputColor),
       
               controller: _nameController,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                 ),
-                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                 labelText: 'Household Name',
               ),
               validator: (value) {
@@ -284,18 +294,18 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 }
                 return null;
               },
-              cursorColor: theme.buttonColor,
+              cursorColor: theme!.buttonColor,
             ),
             TextFormField(
-              style: TextStyle(color: theme.inputColor),
-              cursorColor: theme.buttonColor,
+              style: TextStyle(color: theme!.inputColor),
+              cursorColor: theme!.buttonColor,
               controller: _countController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                 ),
-                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                 labelText: 'Maximum Roommate Count',
               ),
               validator: (value) {
@@ -306,13 +316,13 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               },
             ),
             TextFormField(
-              style: TextStyle(color: theme.inputColor),
+              style: TextStyle(color: theme!.inputColor),
               controller: _passwordController,
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                  borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                 ),
-                floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                 labelText: 'Password',
                 helperText: 'This is used to control who can join your household',
               ),
@@ -329,14 +339,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                    style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+                    child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
                   ),
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                    style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         // Process the data
@@ -348,7 +358,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                         _passwordController.clear();
                       }
                     },
-                    child: Text('Submit', style: TextStyle(color: theme.textColor)),
+                    child: Text('Submit', style: TextStyle(color: theme!.textColor)),
                   ),
                 ],
               ),
@@ -365,14 +375,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
-                style: TextStyle(color: theme.inputColor),
-                cursorColor: theme.buttonColor,
+                style: TextStyle(color: theme!.inputColor),
+                cursorColor: theme!.buttonColor,
                 controller: _nameController,
                 decoration: InputDecoration(
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                    borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                   ),
-                  floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                  floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                   labelText: 'Household Name',
                   labelStyle: TextStyle(color: Colors.grey),
                 ),
@@ -384,14 +394,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 },
               ),
               TextFormField(
-                style: TextStyle(color: theme.inputColor),
-                cursorColor: theme.buttonColor,
+                style: TextStyle(color: theme!.inputColor),
+                cursorColor: theme!.buttonColor,
                 controller: _passwordController,
                 decoration: InputDecoration(
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: theme.buttonColor), // Border color when enabled
+                    borderSide: BorderSide(color: theme!.buttonColor), // Border color when enabled
                   ),
-                  floatingLabelStyle: TextStyle(color: theme.buttonColor),
+                  floatingLabelStyle: TextStyle(color: theme!.buttonColor),
                   labelText: 'Household Password',
                   labelStyle: TextStyle(color: Colors.grey),
                 ),
@@ -408,14 +418,14 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                      style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: Text('Cancel', style: TextStyle(color: theme.textColor)),
+                      child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
                     ),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                      style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           // Process the data
@@ -428,7 +438,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
                         }
                       },
-                      child: Text('Submit', style: TextStyle(color: theme.textColor)),
+                      child: Text('Submit', style: TextStyle(color: theme!.textColor)),
                     ),
                   ],
                 ),
@@ -515,7 +525,7 @@ Widget build(BuildContext context) {
                 ),
               ),
             FutureBuilder(
-              future: readData(),
+              future: readData( widget.userEmail, widget.firestoreInstance ),
               builder:(context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
                   UserModel? user = snapshot.data as UserModel?;
@@ -540,14 +550,14 @@ Widget build(BuildContext context) {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      PreferenceSlider(),
+                                      PreferenceSlider(firestoreInstance: widget.firestoreInstance, userEmail: widget.userEmail,),
                                       SizedBox(height: 16),
                                       ElevatedButton(
                                         onPressed: () {
                                           Navigator.of(context).pop();
                                         },
                                         child: Text('Done', style: TextStyle(color: Colors.white)),
-                                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                                        style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                                       ),
                                     ],
                                   ),
@@ -557,7 +567,7 @@ Widget build(BuildContext context) {
                           );
                         },
                         child: Text('Set Preferences', style: TextStyle(color: Colors.white, fontSize: 16)),
-                        style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                        style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                       ),
                       if (_household != null) ...[
                         SizedBox(height: 20.0),
@@ -581,9 +591,9 @@ Widget build(BuildContext context) {
                           },
                           child: Text(
                             'Leave House',
-                            style: TextStyle(fontSize: 16, color: theme.textColor),
+                            style: TextStyle(fontSize: 16, color: theme!.textColor),
                           ),
-                          style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                          style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                         ),
                       ],
                     ],
@@ -599,10 +609,10 @@ Widget build(BuildContext context) {
                 onPressed: () {
                   _showHouseholdCreationDialog(context); // Call the function to show the dialog
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                 child: Text(
                   'Create a Household',
-                  style: TextStyle(fontSize: 20, color: theme.textColor),
+                  style: TextStyle(fontSize: 20, color: theme!.textColor),
                 ),
               ),
             ),
@@ -615,9 +625,9 @@ Widget build(BuildContext context) {
                 },
                 child: Text(
                   'Join a Household',
-                  style: TextStyle(fontSize: 20, color: theme.textColor),
+                  style: TextStyle(fontSize: 20, color: theme!.textColor),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: theme.buttonColor),
+                style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
               ),
             ),
           ],

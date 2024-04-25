@@ -7,8 +7,10 @@ class ThemeProvider extends ChangeNotifier {
   Color buttonColor = Color.fromARGB(255, 3, 127, 180);
   Color textColor = Colors.white;
   Color inputColor = Colors.black;
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
 
-  ThemeProvider() {
+  ThemeProvider(this.firestoreInstance, this.userEmail) {
     _selectedTheme = fetchLightTheme(); // Set default theme
     inputColor = Colors.black;
     initializeTheme(); // Initialize theme based on user preference
@@ -18,7 +20,7 @@ class ThemeProvider extends ChangeNotifier {
 
 Future<void> initializeTheme() async {
   try {
-    UserModel currUserModel = await readData();
+    UserModel currUserModel = await readData( userEmail, firestoreInstance );
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
     DocumentSnapshot<Map<String, dynamic>> documentSnapshot =
         await _firestore.collection('users').doc(currUserModel.id).get();

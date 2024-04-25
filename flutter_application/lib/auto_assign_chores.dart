@@ -8,6 +8,10 @@ import 'dart:math';
 
 class AutoAssignClass extends StatefulWidget {
   UserModel? currUserModel;
+  final FirebaseFirestore firestoreInstance;
+  final String userEmail;
+
+  AutoAssignClass({Key? key, required this.firestoreInstance, required this.userEmail}) : super(key: key);
 
   @override
   _AutoAssignState createState() => _AutoAssignState();
@@ -19,9 +23,9 @@ class AutoAssignClass extends StatefulWidget {
   // eventually, this function will be used to run the Modified Adjusted Winner Allocation Algorithm
   Future<String> _getUser(String choreName) async {
     // Fetch and save all roommates' emails in the user's household
-    UserModel currUserModel = await readData();
+    UserModel currUserModel = await readData( userEmail, firestoreInstance );
     HouseholdModel currHouseModel = HouseholdModel.fromSnapshot(
-        await FirebaseFirestore.instance
+        await firestoreInstance
             .collection('households')
             .doc(currUserModel.currHouse)
             .get());
@@ -33,7 +37,7 @@ class AutoAssignClass extends StatefulWidget {
       // Fetch the user document corresponding to the email address
       // debugPrint("email to try to pref is $email");
       try {
-        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
+        QuerySnapshot userSnapshot = await firestoreInstance
             .collection('users')
             .where('email', isEqualTo: email)
             .get();

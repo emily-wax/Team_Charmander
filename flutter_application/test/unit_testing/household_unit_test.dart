@@ -307,7 +307,6 @@ group('Household Creation', () {
     expect(find.byKey(Key('max_roommates')), findsOneWidget);
 
   });
-
   testWidgets('successfully leave house when not only member ', (WidgetTester tester) async {
 
     userEmail = 'test2@test.com';

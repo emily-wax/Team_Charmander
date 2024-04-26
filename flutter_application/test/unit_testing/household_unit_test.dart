@@ -359,4 +359,137 @@ group('Household Creation', () {
 
   });
 
+  group('creating a household without filling out a field.', () { 
+
+    testWidgets('tries to create a house. does not enter password', (WidgetTester tester) async {
+
+      houseName = 'newhouse1';
+      userEmail = 'test6@test6.com';
+
+      // add dummy database data
+      await db.collection('users').doc(userEmail).set({
+        'email': userEmail,
+        'currHouse': '',
+        'id': userEmail,
+        'darkMode': false,
+        'slider-prefs': userPrefs
+      });
+
+      // Build our widget and trigger a frame
+        // Build our widget and trigger a frame
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ChangeNotifierProvider(
+              create: (_) => ThemeProvider(db, userEmail), // Provide the mock ThemeProvider
+              child: Builder(
+                builder: (context) => AccountPage(firestoreInstance: db, userEmail: userEmail),
+              ),
+            ),
+          ),
+        );
+
+        // Tap the 'Create Household' button
+        await tester.tap(find.text('Create a Household'));
+        await tester.pump();
+
+        // Enter text into the TextFields
+        await tester.enterText(find.byKey(ValueKey('Household Name')), houseName);
+        await tester.enterText(find.byKey(ValueKey('Maximum Roommate Count')), '2');
+
+        // Tap the 'Submit' button
+        await tester.tap(find.byKey(Key('submit_button')));
+        await tester.pump();
+        await tester.pump(Duration(seconds: 1));
+
+        expect(find.text('Please enter a password for your household'), findsOneWidget);
+    });
+
+    testWidgets('tries to create a house. does not enter roommate count', (WidgetTester tester) async {
+
+      houseName = 'newhouse1';
+      userEmail = 'test6@test6.com';
+
+      // add dummy database data
+      await db.collection('users').doc(userEmail).set({
+        'email': userEmail,
+        'currHouse': '',
+        'id': userEmail,
+        'darkMode': false,
+        'slider-prefs': userPrefs
+      });
+
+      // Build our widget and trigger a frame
+        // Build our widget and trigger a frame
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ChangeNotifierProvider(
+              create: (_) => ThemeProvider(db, userEmail), // Provide the mock ThemeProvider
+              child: Builder(
+                builder: (context) => AccountPage(firestoreInstance: db, userEmail: userEmail),
+              ),
+            ),
+          ),
+        );
+
+        // Tap the 'Create Household' button
+        await tester.tap(find.text('Create a Household'));
+        await tester.pump();
+
+        // Enter text into the TextFields
+        await tester.enterText(find.byKey(ValueKey('Household Name')), houseName);
+        await tester.enterText(find.byKey(ValueKey('Password')), 'password');
+
+        // Tap the 'Submit' button
+        await tester.tap(find.byKey(Key('submit_button')));
+        await tester.pump();
+        await tester.pump(Duration(seconds: 1));
+
+        expect(find.text('Please enter the count'), findsOneWidget);
+    });
+
+    testWidgets('tries to create a house. does not enter house name', (WidgetTester tester) async {
+
+      houseName = 'newhouse1';
+      userEmail = 'test6@test6.com';
+
+      // add dummy database data
+      await db.collection('users').doc(userEmail).set({
+        'email': userEmail,
+        'currHouse': '',
+        'id': userEmail,
+        'darkMode': false,
+        'slider-prefs': userPrefs
+      });
+
+      // Build our widget and trigger a frame
+        // Build our widget and trigger a frame
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ChangeNotifierProvider(
+              create: (_) => ThemeProvider(db, userEmail), // Provide the mock ThemeProvider
+              child: Builder(
+                builder: (context) => AccountPage(firestoreInstance: db, userEmail: userEmail),
+              ),
+            ),
+          ),
+        );
+
+        // Tap the 'Create Household' button
+        await tester.tap(find.text('Create a Household'));
+        await tester.pump();
+
+        // Enter text into the TextFields
+        await tester.enterText(find.byKey(ValueKey('Maximum Roommate Count')), '2');
+        await tester.enterText(find.byKey(ValueKey('Password')), 'password');
+
+        // Tap the 'Submit' button
+        await tester.tap(find.byKey(Key('submit_button')));
+        await tester.pump();
+        await tester.pump(Duration(seconds: 1));
+
+        expect(find.text('Please enter the name'), findsOneWidget);
+    });
+
+  });
+
 }

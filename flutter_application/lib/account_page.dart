@@ -39,7 +39,7 @@ class AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     _setUpTheme();
-    _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
+    fetchHouseholdsForCurrentUser( widget.firestoreInstance, widget.userEmail );
   }
 
   void _setUpTheme() {
@@ -78,19 +78,19 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
 
 }
 
-  Future<void> _fetchHouseholdsForCurrentUser( FirebaseFirestore db ) async {
+  Future<void> fetchHouseholdsForCurrentUser( FirebaseFirestore db, String userEmail ) async {
       QuerySnapshot snapshot = await db
           .collection('households')
-          .where('roommates', arrayContains: widget.userEmail)
+          .where('roommates', arrayContains: userEmail)
           .get();
       setState(() {
         if (snapshot.docs.isNotEmpty){
           _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
-          updateUserHousehold( db, widget.userEmail, _household!.name);
+          updateUserHousehold( db, userEmail, _household!.name);
           _showJoinButton = false;
         } else {
           _household = null;
-          updateUserHousehold( db, widget.userEmail, "");
+          updateUserHousehold( db, userEmail, "");
           _showJoinButton = true;
         }
       });
@@ -120,7 +120,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
             content: Text('Object submitted successfully'),
           ));
 
-          _fetchHouseholdsForCurrentUser( db );
+          fetchHouseholdsForCurrentUser( db, userEmail );
           Navigator.of(context).pop();
         });
 
@@ -178,7 +178,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
 
             await currHouseRef.delete().then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
+                fetchHouseholdsForCurrentUser( widget.firestoreInstance, widget.userEmail );
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household. It has been deleted.'),
@@ -193,7 +193,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
             // if there are still roommates left, just delete current user
             document.reference.update({'roommates': existingRoommates}).then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
+                fetchHouseholdsForCurrentUser( widget.firestoreInstance, widget.userEmail );
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household.'),
@@ -251,7 +251,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
                 content: Text('Household joined successfully'),
               ));
 
-              _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
+              fetchHouseholdsForCurrentUser( widget.firestoreInstance, widget.userEmail );
               Navigator.of(context).pop();
 
             }).catchError((error) {
@@ -355,7 +355,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
                         int count = int.parse(_countController.text);
 
                         createHousehold( widget.firestoreInstance,  context, name, count, _passwordController.text, widget.userEmail);
-                        Navigator.of(context).pop();
+                        
                         
                       }
                     },
@@ -435,7 +435,6 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
                           // Process the data
 
                           String? name = _nameController.text;
-                          Navigator.of(context).pop();
                           joinHouse( widget.firestoreInstance ,name!, _passwordController.text);
                           
 
@@ -463,7 +462,7 @@ Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String h
             content: 
               SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.55),
                   child: _buildHouseholdCreationForm()
                 ),
               )

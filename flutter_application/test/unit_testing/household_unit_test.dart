@@ -1,3 +1,16 @@
+/* 
+HOW TO GET TEST COVERAGE TO SHOW UP:
+
+aiming for about 90% on each file.
+
+run flutter test --coverage PATH
+
+go to linux environment, 
+  - run sudo apt-get install lcov
+  - run lcov --list lcov.info   IN COVERAGE FOLDER
+
+*/
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application/account_page.dart';

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application/appliances_page.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 
 void main () {
@@ -64,6 +65,15 @@ void main () {
 
     expect(documentSnapshot.exists, false );
 
+  });
+
+  testWidgets('AppliancesPage shows loading indicator while fetching user data',
+      (WidgetTester tester) async {
+    // Build AppliancesPage widget
+    await tester.pumpWidget(MaterialApp(home: appliancesPage));
+
+    // Verify CircularProgressIndicator is displayed
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
 }

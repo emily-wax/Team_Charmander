@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
-import 'HomePage.dart';
 import 'SignInPage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,11 +18,10 @@ class AccountPage extends StatefulWidget {
 
   @override
   @override
-  _AccountPageState createState() => _AccountPageState();
+  AccountPageState createState() => AccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+class AccountPageState extends State<AccountPage> {
   User? currUser;
   HouseholdModel? _household;
   ThemeProvider? theme;
@@ -40,9 +38,8 @@ class _AccountPageState extends State<AccountPage> {
   @override
   void initState() {
     super.initState();
-    currUser = _auth.currentUser;
     _setUpTheme();
-    _fetchHouseholdsForCurrentUser();
+    _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
   }
 
   void _setUpTheme() {
@@ -64,9 +61,9 @@ class _AccountPageState extends State<AccountPage> {
   }
 }
 
-Future<void> updateUserHousehold(String? userId, String householdName) async {
+Future<void> updateUserHousehold( FirebaseFirestore db, String? userId, String householdName ) async {
 
-  QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: userId).get();
+  QuerySnapshot querySnapshot = await db.collection('users').where('email', isEqualTo: userId).get();
   List<QueryDocumentSnapshot> documents = querySnapshot.docs;
 
   if(documents.isNotEmpty) {
@@ -81,55 +78,55 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
 }
 
-  Future<void> _fetchHouseholdsForCurrentUser() async {
-    User? currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
+  Future<void> _fetchHouseholdsForCurrentUser( FirebaseFirestore db ) async {
+      QuerySnapshot snapshot = await db
           .collection('households')
-          .where('roommates', arrayContains: currentUser.email)
+          .where('roommates', arrayContains: widget.userEmail)
           .get();
       setState(() {
         if (snapshot.docs.isNotEmpty){
           _household =HouseholdModel.fromSnapshot(snapshot.docs.first);
-          updateUserHousehold( currentUser.email, _household!.name);
+          updateUserHousehold( db, widget.userEmail, _household!.name);
           _showJoinButton = false;
         } else {
           _household = null;
-          updateUserHousehold( currentUser.email, "");
+          updateUserHousehold( db, widget.userEmail, "");
           _showJoinButton = true;
         }
       });
-    }
   }
 
-  void saveHouseholdToFirebase( String name, int count, String password ) async{
+  /* called upon submission of create Household form. Adds the household to database */
+  Future<void> createHousehold( FirebaseFirestore db, BuildContext context, String name, int count, String password, String userEmail ) async{
 
     try{
 
-      if( (await doesHouseholdExist(name)) == false ) {
-        DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(name);
+      if( (await doesHouseholdExist(db, name)) == false ) {
+        DocumentReference householdRef = db.collection('households').doc(name);
 
         await householdRef.set(
           {
           'name': name,
           'password': password,
           'max_roommate_count': count,
-          'roommates': [currUser!.email],
+          'roommates': [userEmail],
           }
         ).then((_) {
           _nameController.clear();
           _countController.clear();      
           _passwordController.clear();
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            key: Key('house_add_success'),
             content: Text('Object submitted successfully'),
           ));
 
-          _fetchHouseholdsForCurrentUser();
+          _fetchHouseholdsForCurrentUser( db );
           Navigator.of(context).pop();
         });
 
       } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            key: Key('household_duplicate'),
             content: Text('Household name already exists. Please enter unique household name.'),
           ));
       }
@@ -141,10 +138,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     }
   }
 
-  void removeFromHousehold(String houseName) {
-    User? _currentUser = _auth.currentUser;
+  void removeFromHousehold( FirebaseFirestore db ,String houseName) {
 
-    FirebaseFirestore.instance
+    db
         .collection('households')
         .where('name', isEqualTo: houseName)
         .get()
@@ -153,13 +149,13 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
         var document = querySnapshot.docs.first;
         List<dynamic> existingRoommates =
             List.from(document.data()['roommates']);
-        if (existingRoommates.contains(_currentUser!.email)) {
-          existingRoommates.remove(_currentUser.email);
+        if (existingRoommates.contains(widget.userEmail)) {
+          existingRoommates.remove(widget.userEmail);
 
           if(existingRoommates.isEmpty) {
 
             // delete household if no more roommates exist
-            DocumentReference currHouseRef = FirebaseFirestore.instance.collection('households').doc(houseName);
+            DocumentReference currHouseRef = db.collection('households').doc(houseName);
 
             // TODO: deleting subcollections is hardcoded, put this in it's own function
             QuerySnapshot appliancesSnapshot = await currHouseRef.collection('appliances').get();
@@ -182,7 +178,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
             await currHouseRef.delete().then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser();
+                _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household. It has been deleted.'),
@@ -197,7 +193,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             // if there are still roommates left, just delete current user
             document.reference.update({'roommates': existingRoommates}).then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser();
+                _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household.'),
@@ -216,9 +212,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     });
   }
 
-  void addToObjectArray( String houseName, String password ){
+  void joinHouse( FirebaseFirestore db, String houseName, String password ){
 
-    FirebaseFirestore.instance.collection('households')
+    db.collection('households')
       .where('name', isEqualTo: houseName)
       .get()
       .then( (querySnapshot){
@@ -232,7 +228,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
           HouseholdModel house = HouseholdModel.fromSnapshot(document);
           // TODO: check if the max roommate count has already been hit
 
-          if (existingArray.contains( currUser?.email)){
+          if (existingArray.contains( widget.userEmail)){
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('You are already in this household.'),
             ));            
@@ -242,10 +238,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             ));    
           } else if ( existingArray.length >= house.max_roommate_count ){
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              key: ValueKey('max_roommates'),
               content: Text('This house has already hit the maximum amount of roommates.'),
             ));   
           } else {
-            existingArray.add(currUser?.email);
+            existingArray.add(widget.userEmail);
             // Update the document with the modified array
             document.reference.update({'roommates': existingArray}).then((_) {
 
@@ -254,7 +251,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 content: Text('Household joined successfully'),
               ));
 
-              _fetchHouseholdsForCurrentUser();
+              _fetchHouseholdsForCurrentUser( widget.firestoreInstance );
               Navigator.of(context).pop();
 
             }).catchError((error) {
@@ -278,6 +275,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             TextFormField(
+              key: ValueKey('Household Name'),
               style: TextStyle(color: theme!.inputColor),
       
               controller: _nameController,
@@ -297,6 +295,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               cursorColor: theme!.buttonColor,
             ),
             TextFormField(
+              key: ValueKey('Maximum Roommate Count'),
               style: TextStyle(color: theme!.inputColor),
               cursorColor: theme!.buttonColor,
               controller: _countController,
@@ -316,6 +315,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
               },
             ),
             TextFormField(
+              key: ValueKey('Password'),
               style: TextStyle(color: theme!.inputColor),
               controller: _passwordController,
               decoration: InputDecoration(
@@ -346,16 +346,17 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                     child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
                   ),
                   ElevatedButton(
+                    key: Key('submit_button'),
                     style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         // Process the data
                         String name = _nameController.text;
                         int count = int.parse(_countController.text);
-                        _nameController.clear();
-                        _countController.clear();
-                        saveHouseholdToFirebase(name, count, _passwordController.text);
-                        _passwordController.clear();
+
+                        createHousehold( widget.firestoreInstance,  context, name, count, _passwordController.text, widget.userEmail);
+                        Navigator.of(context).pop();
+                        
                       }
                     },
                     child: Text('Submit', style: TextStyle(color: theme!.textColor)),
@@ -375,6 +376,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
+                key: ValueKey('Household Name'),
                 style: TextStyle(color: theme!.inputColor),
                 cursorColor: theme!.buttonColor,
                 controller: _nameController,
@@ -394,6 +396,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 },
               ),
               TextFormField(
+                key: ValueKey('Household Password'),
                 style: TextStyle(color: theme!.inputColor),
                 cursorColor: theme!.buttonColor,
                 controller: _passwordController,
@@ -425,13 +428,16 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                       child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
                     ),
                     ElevatedButton(
+                      key: ValueKey('submit_button'),
                       style: ElevatedButton.styleFrom(backgroundColor: theme!.buttonColor),
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           // Process the data
 
                           String? name = _nameController.text;
-                          addToObjectArray(name!, _passwordController.text);
+                          Navigator.of(context).pop();
+                          joinHouse( widget.firestoreInstance ,name!, _passwordController.text);
+                          
 
                           _passwordController.clear();
                           _nameController.clear();
@@ -457,7 +463,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             content: 
               SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
                   child: _buildHouseholdCreationForm()
                 ),
               )
@@ -475,7 +481,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             content: 
               SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.25),
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.35),
                   child: _buildHouseholdJoinForm()
                 ),
               )
@@ -586,8 +592,9 @@ Widget build(BuildContext context) {
                         ),
                         SizedBox(height: 20.0),
                         ElevatedButton(
+                          key: ValueKey('Leave House'),
                           onPressed: () {
-                            removeFromHousehold(_household!.name);
+                            removeFromHousehold( widget.firestoreInstance ,_household!.name);
                           },
                           child: Text(
                             'Leave House',

@@ -20,12 +20,11 @@ class HouseholdModel{
   }
 }
 
-Future<bool> doesHouseholdExist(String householdId) async {
+Future<bool> doesHouseholdExist( FirebaseFirestore db, String householdId) async {
   try {
     // Create a reference to the document with the given householdId
-    DocumentReference householdRef = FirebaseFirestore.instance.collection('households').doc(householdId);
+    DocumentReference householdRef = db.collection('households').doc(householdId);
 
-    // Get the document snapshot
     DocumentSnapshot snapshot = await householdRef.get();
 
     // Check if the document exists

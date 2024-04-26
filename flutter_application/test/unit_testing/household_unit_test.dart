@@ -308,4 +308,55 @@ group('Household Creation', () {
 
   });
 
+  testWidgets('successfully leave house when not only member ', (WidgetTester tester) async {
+
+    userEmail = 'test2@test.com';
+    houseName = 'housetest5';
+
+    await db.collection('users').doc(userEmail).set({
+      'email': userEmail,
+      'currHouse': houseName,
+      'id': userEmail,
+      'darkMode': false,
+      'slider-prefs': userPrefs
+    });
+    
+    await db.collection('households').doc(houseName).set({
+      'max_roommate_count': 2,
+      'name': houseName,
+      'password': 'password',
+      'roommates': ['test1@test.com', userEmail], // Assuming the current user is a roommate
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangeNotifierProvider(
+          create: (_) => ThemeProvider(db, userEmail), // Provide the mock ThemeProvider
+          child: Builder(
+            builder: (context) => AccountPage(firestoreInstance: db, userEmail: userEmail),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump(Duration(seconds: 3));
+
+    // Ensure user is in household initially
+    expect(find.text(houseName), findsOneWidget);
+
+    await tester.pump(Duration(seconds: 3));
+
+    await tester.tap(find.byKey(ValueKey('Leave House')));
+    
+    await tester.pump(Duration(seconds: 3));
+
+    // Ensure user is removed from household
+    expect(find.text(houseName), findsNothing);
+
+    // Ensure household is deleted
+    final DocumentSnapshot documentSnapshot = await db.collection('households').doc(houseName).get();
+    expect(documentSnapshot.exists, true);
+
+  });
+
 }

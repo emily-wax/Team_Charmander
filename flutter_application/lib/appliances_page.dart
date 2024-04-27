@@ -131,6 +131,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
 }
 
 
+  // Function that builds add appliancebutton
   Widget _buildAddApplianceButton() {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return GestureDetector(

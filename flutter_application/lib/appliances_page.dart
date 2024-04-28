@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
+///Seeing if this works
 class AppliancesPage extends StatefulWidget {
   const AppliancesPage({Key? key}) : super(key: key);
 
@@ -131,7 +132,7 @@ class _AppliancesPageState extends State<AppliancesPage> {
 }
 
 
-  // Function that builds add appliancebutton
+  /// Function that builds 'add appliancebutton' [_buildAddApplianceButton()]
   Widget _buildAddApplianceButton() {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return GestureDetector(

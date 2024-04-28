@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'user_model.dart';
@@ -130,9 +131,9 @@ class AppliancesPageState extends State<AppliancesPage> {
                                 : ElevatedButton(
                                     onPressed: () {
                                       if (isClaimed) {
-                                        _unclaimAppliance(appliances[index].id);
+                                        unclaimAppliance(appliances[index].id, FirebaseFirestore.instance, "house");
                                       } else {
-                                        _claimAppliance(appliances[index].id);
+                                        claimAppliance(appliances[index].id, FirebaseFirestore.instance, "house", "guy");
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(backgroundColor: themeProvider.buttonColor),
@@ -161,8 +162,9 @@ class AppliancesPageState extends State<AppliancesPage> {
 
   Widget _buildAddApplianceButton() {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    return GestureDetector(
-      onTap: () {
+    return ElevatedButton(
+      key: ValueKey('Add appliance'),
+      onPressed: () {
         _addApplianceDialog(context);
       },
       child: Container(
@@ -189,6 +191,7 @@ class AppliancesPageState extends State<AppliancesPage> {
         return AlertDialog(
           title: Text('Add Appliance'),
           content: TextField(
+            key: ValueKey('Add name'),
             maxLength: 15,
             cursorColor: theme?.buttonColor,
             controller: _applianceNameController,
@@ -208,6 +211,7 @@ class AppliancesPageState extends State<AppliancesPage> {
               child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
             ),
             TextButton(
+              key: ValueKey('Submit'),
               style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
               onPressed: () {
                 addAppliance(_applianceNameController.text, widget.firestoreInstance, currUserModel!.currHouse!);
@@ -251,19 +255,19 @@ class AppliancesPageState extends State<AppliancesPage> {
 }
 
 
-  void _claimAppliance(String applianceId) async {
+  Future<void> claimAppliance(String applianceId, FirebaseFirestore db, String userHouse, String userId) async {
     // Get the current user's ID
-    String? userId = currUserModel!.email;
+
 
     // If userId is null, handle the case where the user is not signed in
-    if (userId == null) {
-      // Handle the case where the user is not signed in
-      print('User is not signed in.');
-      return;
-    }
+    // if (userId == null) {
+    //   // Handle the case where the user is not signed in
+    //   print('User is not signed in.');
+    //   return;
+    // }
 
     // Get the appliance document from Firestore
-    DocumentSnapshot applianceSnapshot = await widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).get();
+    DocumentSnapshot applianceSnapshot = await db.collection('households').doc(userHouse).collection('appliances').doc(applianceId).get();
 
     // Get the current claim status and claimed by user ID
     bool isClaimed = applianceSnapshot['claimed'];
@@ -276,17 +280,19 @@ class AppliancesPageState extends State<AppliancesPage> {
       return;
     }
 
+
+
     // Update the appliance document in Firestore with the current user's ID and claimedAt timestamp
-    await widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
+    await db.collection('households').doc(userHouse).collection('appliances').doc(applianceId).update({
       'claimed': true,
       'claimedBy': userId, // Use the current user's ID
       'claimedAt': FieldValue.serverTimestamp(), // Update claimedAt with server timestamp
     });
   }
 
-  void _unclaimAppliance(String applianceId) {
+  Future<void> unclaimAppliance(String applianceId, FirebaseFirestore db, String userHouse) async {
     // Clear the claimedBy field when unclaim
-    widget.firestoreInstance.collection('households').doc(currUserModel!.currHouse).collection('appliances').doc(applianceId).update({
+    await db.collection('households').doc(userHouse).collection('appliances').doc(applianceId).update({
       'claimed': false,
       'claimedBy': null,
       'claimedAt': null, // Clear claimedAt

@@ -140,6 +140,7 @@ class AppliancesPageState extends State<AppliancesPage> {
                                     child: Text(isClaimed ? 'Unclaim' : 'Claim', style: TextStyle(color: themeProvider.textColor)),
                                   ),
                             IconButton(
+                              key: Key('del'),
                               icon: Icon(Icons.delete),
                               onPressed: () => _deleteApplianceDialog(context, appliances[index].id),
                             ),
@@ -165,6 +166,7 @@ class AppliancesPageState extends State<AppliancesPage> {
     return ElevatedButton(
       key: ValueKey('Add appliance'),
       onPressed: () {
+        print("adding");
         _addApplianceDialog(context);
       },
       child: Container(
@@ -216,6 +218,7 @@ class AppliancesPageState extends State<AppliancesPage> {
               onPressed: () {
                 addAppliance(_applianceNameController.text, widget.firestoreInstance, currUserModel!.currHouse!);
                 Navigator.of(context).pop();
+                print("added");
               },
               child: Text('Add', style: TextStyle(color: theme!.textColor)),
             ),
@@ -241,6 +244,7 @@ class AppliancesPageState extends State<AppliancesPage> {
             child: Text('Cancel', style: TextStyle(color: theme!.textColor)),
           ),
           TextButton(
+            key: Key('delete'),
             style: TextButton.styleFrom(backgroundColor: theme!.buttonColor),
             onPressed: () {
               deleteAppliance(widget.firestoreInstance ,applianceId, currUserModel!.currHouse!);
@@ -313,33 +317,6 @@ class AppliancesPageState extends State<AppliancesPage> {
       // Handle any errors that occur during adding the appliance
       print('Error adding appliance: $error');
     });
-  }
-
-  void _confirmDeleteAppliance(String applianceId) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Delete Appliance'),
-          content: Text('Are you sure you want to delete this appliance?'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                deleteAppliance(widget.firestoreInstance ,applianceId, currUserModel!.currHouse!);
-                Navigator.of(context).pop();
-              },
-              child: Text('Yes'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> deleteAppliance( FirebaseFirestore db, String applianceId, String userHouse) async {

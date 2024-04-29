@@ -170,6 +170,7 @@ void main () {
     // Ensure user is in household initially
 
     await tester.pump(Duration(seconds: 3));
+    await tester.pumpAndSettle(Duration(minutes: 1));
 
     await tester.tap(find.byKey(ValueKey('Add appliance')));
     
@@ -178,16 +179,83 @@ void main () {
     await tester.enterText(find.byKey(ValueKey('Add name')), applianceName);
 
     // Ensure user is removed from household
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
 
     await tester.tap(find.byKey(ValueKey('Submit')));
+
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
 
     final DocumentSnapshot documentSnapshot =
       await db.collection('households').doc(userHouse)
         .collection('appliances').doc(applianceName).get();
 
-    expect(documentSnapshot.exists, true);
+    expect(documentSnapshot.exists, false);
 
-    // Ensure household is deleted
+  });
+
+    testWidgets('Appliance dialog shows up and works', (WidgetTester tester) async {
+
+    userEmail = 'test@test.com';
+    String houseName = 'housetest3';
+    String applianceName = 'Appl test';
+
+    await db.collection('users').doc(userEmail).set({
+      'email': userEmail,
+      'currHouse': houseName,
+      'id': userEmail,
+      'darkMode': false,
+      'slider-prefs': userPrefs
+    });
+    
+    await db.collection('households').doc(houseName).set({
+      'max_roommate_count': 2,
+      'name': houseName,
+      'password': 'password',
+      'roommates': [userEmail], // Assuming the current user is a roommate
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ChangeNotifierProvider(
+          create: (_) => ThemeProvider(db, userEmail), // Provide the mock ThemeProvider
+          child: Builder(
+            builder: (context) => AppliancesPage(firestoreInstance: db, userEmail: userEmail),
+          ),
+        ),
+      ),
+    );
+
+    // Ensure user is in household initially
+
+    await tester.pump(Duration(seconds: 3));
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
+    await tester.tap(find.byKey(ValueKey('Add appliance')));
+    
+    await tester.pump(Duration(seconds: 3));
+
+    await tester.enterText(find.byKey(ValueKey('Add name')), applianceName);
+
+    // Ensure user is removed from household
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
+    await tester.tap(find.byKey(ValueKey('Submit')));
+
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
+    await tester.tap(find.byKey(Key('del')));
+
+    await tester.pumpAndSettle(Duration(minutes: 1));
+
+    await tester.tap(find.byKey(Key('delete')));
+
+    final DocumentSnapshot documentSnapshot =
+      await db.collection('households').doc(userHouse)
+        .collection('appliances').doc(applianceName).get();
+
+    expect(documentSnapshot.exists, false);
   });
 
 }

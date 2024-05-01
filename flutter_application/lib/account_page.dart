@@ -1,8 +1,8 @@
+/// Account Page
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'preferences_page.dart';
 import 'user_model.dart';
-import 'HomePage.dart';
 import 'SignInPage.dart';
 import 'household_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,12 +11,14 @@ import 'package:provider/provider.dart';
 
 ThemeProvider theme = ThemeProvider();
 
+/// StatefulWidget that represents the account page of the application.
 class AccountPage extends StatefulWidget {
   @override
-  _AccountPageState createState() => _AccountPageState();
+  AccountPageState createState() => AccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> {
+/// State class.
+class AccountPageState extends State<AccountPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? currUser;
   HouseholdModel? _household;
@@ -34,12 +36,14 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     currUser = _auth.currentUser;
-    _fetchHouseholdsForCurrentUser();
+    fetchHouseholdsForCurrentUser();
   }
 
 
-
-  void _logout(BuildContext context) async {
+  /// Logs out the current user.
+  ///
+  /// Navigates to the login screen.
+  void logout(BuildContext context) async {
   try {
     await FirebaseAuth.instance.signOut();
     // Navigate to the login screen or any other screen you want after logout
@@ -54,6 +58,10 @@ class _AccountPageState extends State<AccountPage> {
   }
 }
 
+  /// Updates the current user's household in firebase.
+  ///
+  /// [userId] - The ID of the user.
+  /// [householdName] - The name of the household to update.
 Future<void> updateUserHousehold(String? userId, String householdName) async {
 
   QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: userId).get();
@@ -70,8 +78,8 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
   }
 
 }
-
-  Future<void> _fetchHouseholdsForCurrentUser() async {
+  /// Fetches households for the current user from firebase to update display.
+  Future<void> fetchHouseholdsForCurrentUser() async {
     User? currentUser = _auth.currentUser;
     if (currentUser != null) {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
@@ -92,6 +100,11 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     }
   }
 
+  /// Saves new household information to Firebase.
+  ///
+  /// [name] - The name of the household.
+  /// [count] - The maximum number of roommates.
+  /// [password] - The password for the household.
   void saveHouseholdToFirebase( String name, int count, String password ) async{
 
     try{
@@ -114,7 +127,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             content: Text('Object submitted successfully'),
           ));
 
-          _fetchHouseholdsForCurrentUser();
+          fetchHouseholdsForCurrentUser();
           Navigator.of(context).pop();
         });
 
@@ -131,6 +144,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     }
   }
 
+  /// Removes the current user from a household.
+  ///
+  /// [houseName] - The name of the household.
   void removeFromHousehold(String houseName) {
     User? _currentUser = _auth.currentUser;
 
@@ -172,7 +188,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
 
             await currHouseRef.delete().then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser();
+                fetchHouseholdsForCurrentUser();
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household. It has been deleted.'),
@@ -187,7 +203,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
             // if there are still roommates left, just delete current user
             document.reference.update({'roommates': existingRoommates}).then((_) {
               setState(() {
-                _fetchHouseholdsForCurrentUser();
+                fetchHouseholdsForCurrentUser();
               });
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Text('You have left the household.'),
@@ -206,6 +222,10 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     });
   }
 
+  /// Adds the current user to a household.
+  ///
+  /// [houseName] - The name of the household.
+  /// [password] - The password for the household.
   void addToObjectArray( String houseName, String password ){
 
     FirebaseFirestore.instance.collection('households')
@@ -244,7 +264,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
                 content: Text('Household joined successfully'),
               ));
 
-              _fetchHouseholdsForCurrentUser();
+              fetchHouseholdsForCurrentUser();
               Navigator.of(context).pop();
 
             }).catchError((error) {
@@ -261,6 +281,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
       });
   }
 
+  /// Builds the form for creating a household.
   Widget _buildHouseholdCreationForm() {
     return Form(
         key: _formKey,
@@ -358,6 +379,7 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     );
   }
 
+  /// Builds the form for joining a household.
   Widget _buildHouseholdJoinForm() {
     return Form(
           key: _formKey,
@@ -438,7 +460,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
         );
   }
 
-  // Function to show household creation dialog
+  /// Shows the household creation dialog.
+  ///
+  /// [context] - The build context.
   Future<void> _showHouseholdCreationDialog(BuildContext context) async {
     return showDialog<void>(
       context: context,
@@ -457,6 +481,9 @@ Future<void> updateUserHousehold(String? userId, String householdName) async {
     );
   }
 
+  /// Shows the household join dialog.
+  ///
+  /// [context] - The build context.
   Future<void> _showHouseholdJoinDialog(BuildContext context) async {
     return showDialog<void>(
       context: context,
@@ -492,7 +519,7 @@ Widget build(BuildContext context) {
           message: 'Log out',
           child: IconButton( 
             icon: const Icon(Icons.logout),
-            onPressed:() => _logout(context),
+            onPressed:() => logout(context),
           ), 
         )
       ],

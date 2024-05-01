@@ -1,0 +1,8 @@
+dartdoc:
+  output: doc/api_docs
+  exclude:
+    - "**/node_modules/**"
+  showUndocumentedCategories: true
+  showUndocumentedElements: true
+  hideInheritedCategories: true 
+  hideInheritedElements: true
